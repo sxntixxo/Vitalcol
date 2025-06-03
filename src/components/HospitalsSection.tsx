@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Phone, Clock, AlertTriangle, Search } from 'lucide-react';
+import { MapPin, AlertTriangle, Search } from 'lucide-react';
 import MapDisplay from './MapDisplay';
 import MedicalFacilityCard from './MedicalFacilityCard';
 import { Loader } from '@googlemaps/js-api-loader';
@@ -67,104 +67,29 @@ const HospitalsSection: React.FC<HospitalsSectionProps> = ({ severity, userLocat
 
     try {
       const service = new window.google.maps.places.PlacesService(document.createElement('div'));
-      const allResults: google.maps.places.PlaceResult[] = [];
+      const request = {
+        location: new window.google.maps.LatLng(userLocation!.lat, userLocation!.lng),
+        radius: 5000, // 5 km
+        type: 'hospital', // Filtrar por tipo relevante
+        keyword: 'clínica EPS IPS centro médico', // Palabras clave adicionales
+      };
 
-      // Búsquedas múltiples con diferentes keywords (sin tipo específico para mayor flexibilidad)
-      const searches = [
-        { keyword: 'hospital' },
-        { keyword: 'clínica' },
-        { keyword: 'centro médico' },
-        { keyword: 'EPS' },
-        { keyword: 'IPS' },
-        { keyword: 'centro de salud' },
-        { keyword: 'policlínica' },
-        { keyword: 'unidad médica' }
-      ] as Array<{keyword: string, type?: string}>;
-
-      console.log('Starting searches for medical centers...');
-
-      for (const search of searches) {
-        try {
-          const request: any = {
-            location: new window.google.maps.LatLng(userLocation!.lat, userLocation!.lng),
-            radius: 5000, // 5km radius
-            keyword: search.keyword,
-          };
-
-          // Solo agregar tipo si existe
-          if (search.type) {
-            request.type = search.type;
+      const results = await new Promise<google.maps.places.PlaceResult[]>((resolve) => {
+        service.nearbySearch(request, (results, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+            resolve(results);
+          } else {
+            resolve([]); // Si no hay resultados, devolver un array vacío
           }
+        });
+      });
 
-          console.log('Searching with:', request);
-
-          const results = await new Promise<google.maps.places.PlaceResult[]>((resolve, reject) => {
-            service.nearbySearch(request, (results, status) => {
-              console.log(`Search for ${search.keyword}:`, status, results?.length || 0, 'results');
-              if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-                resolve(results);
-              } else if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-                resolve([]); // No rechazamos, solo devolvemos array vacío
-              } else {
-                console.warn(`Search failed for ${search.keyword}:`, status);
-                resolve([]); // En lugar de rechazar, devolvemos array vacío
-              }
-            });
-          });
-
-          allResults.push(...results);
-        } catch (err) {
-          console.warn('Individual search failed:', err);
-          // Continuamos con las demás búsquedas
-        }
-      }
-
-      console.log('Total results found:', allResults.length);
-
-      // Si no encontramos resultados con las búsquedas específicas, hacemos una búsqueda general
-      if (allResults.length === 0) {
-        console.log('No specific results found, trying general search...');
-        try {
-          const generalRequest = {
-            location: new window.google.maps.LatLng(userLocation!.lat, userLocation!.lng),
-            radius: 10000, // Expandimos a 10km
-            keyword: 'hospital OR clínica OR centro médico OR salud',
-          };
-
-          const generalResults = await new Promise<google.maps.places.PlaceResult[]>((resolve, reject) => {
-            service.nearbySearch(generalRequest, (results, status) => {
-              console.log('General search:', status, results?.length || 0, 'results');
-              if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-                resolve(results);
-              } else {
-                resolve([]);
-              }
-            });
-          });
-
-          allResults.push(...generalResults);
-        } catch (err) {
-          console.warn('General search failed:', err);
-        }
-      }
-
-      // Procesar y filtrar resultados
-      const processedCenters = allResults
-        .filter((place, index, self) => {
-          // Eliminar duplicados por place_id
-          const isDuplicate = index !== self.findIndex((p) => p.place_id === place.place_id);
-          if (isDuplicate) return false;
-
-          // Filtrar lugares irrelevantes
+      // Filtrar resultados irrelevantes
+      const processedCenters = results
+        .filter((place) => {
           const name = place.name?.toLowerCase() || '';
           const isRelevant = !/(farmacia|droguería|laboratorio|veterinaria|spa|estética|odontología|óptica)/i.test(name);
-          
-          // Debe tener ubicación
-          const hasLocation = place.geometry?.location;
-
-          console.log('Filtering place:', name, 'isRelevant:', isRelevant, 'hasLocation:', !!hasLocation);
-
-          return isRelevant && hasLocation;
+          return isRelevant && place.geometry?.location;
         })
         .map((place) => {
           const location = {
@@ -187,10 +112,8 @@ const HospitalsSection: React.FC<HospitalsSectionProps> = ({ severity, userLocat
             rating: place.rating,
           };
         })
-        .filter(center => center.distanceKm <= MAX_DISTANCE_KM) // Filtrar por distancia
+        .filter((center) => center.distanceKm <= MAX_DISTANCE_KM) // Filtrar por distancia
         .sort((a, b) => a.distanceKm - b.distanceKm); // Ordenar por distancia
-
-      console.log('Processed centers:', processedCenters.length);
 
       if (processedCenters.length === 0) {
         setError('No se encontraron centros médicos cercanos. Intenta expandir el área de búsqueda.');
@@ -198,7 +121,6 @@ const HospitalsSection: React.FC<HospitalsSectionProps> = ({ severity, userLocat
         setMedicalCenters(processedCenters);
         setError(null);
       }
-
     } catch (err) {
       console.error('Error searching medical centers:', err);
       setError('Error buscando centros médicos. Por favor, intenta de nuevo.');
