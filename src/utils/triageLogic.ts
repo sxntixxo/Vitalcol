@@ -16,41 +16,45 @@ export const getSymptomQuestions = () => {
 export const analyzeSeverity = (symptoms: string[]): SeverityLevel => {
   const severeSymptoms = [
     'dificultad para respirar', 
-    'respirar', 
     'dolor en el pecho', 
-    'pecho', 
     'desvanecimiento',
     'desmayo',
     'confusión',
     'pérdida de conciencia',
     'convulsión'
   ];
-  
+
   const moderateSymptoms = [
     'fiebre alta', 
-    'fiebre',
     'vómito persistente', 
-    'vómito',
     'deshidratación', 
     'dolor intenso', 
-    'dolor fuerte',
-    'dolor'
+    'dolor fuerte'
   ];
-  
-  for (const symptom of symptoms) {
-    const lowerSymptom = symptom.toLowerCase();
-    if (severeSymptoms.some(s => lowerSymptom.includes(s))) {
+
+  // Convertir síntomas a minúsculas para comparación
+  const lowerSymptoms = symptoms.map(s => s.toLowerCase());
+
+  // Verificar síntomas graves usando coincidencias exactas o patrones más específicos
+  for (const symptom of lowerSymptoms) {
+    if (severeSymptoms.some(s => 
+      symptom === s || 
+      symptom.includes(s) && !symptom.includes("no " + s) && !symptom.includes("sin " + s)
+    )) {
       return 'severe';
     }
   }
-  
-  for (const symptom of symptoms) {
-    const lowerSymptom = symptom.toLowerCase();
-    if (moderateSymptoms.some(s => lowerSymptom.includes(s))) {
+
+  // Verificar síntomas moderados
+  for (const symptom of lowerSymptoms) {
+    if (moderateSymptoms.some(s => 
+      symptom === s || 
+      symptom.includes(s) && !symptom.includes("no " + s) && !symptom.includes("sin " + s)
+    )) {
       return 'moderate';
     }
   }
-  
+
   return 'mild';
 };
 

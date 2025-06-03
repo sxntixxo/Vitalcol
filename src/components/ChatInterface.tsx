@@ -1,27 +1,22 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import ChatMessage from './ChatMessage';
-import Header from './Header';
 import QuickReplyButtons from './QuickReplyButtons';
 import HospitalsSection from './HospitalsSection';
 import SymptomSelector from './SymptomSelector';
 import AITypingIndicator from './AITypingIndicator';
 import { Message, TriageStage, SeverityLevel, UserLocation } from '../types';
-import { getInitialMessages, getRecommendation } from '../utils/triageLogic';
+import { getRecommendation } from '../utils/triageLogic';
 
 function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>(getInitialMessages());
+  const [messages, setMessages] = useState<Message[]>([
+    { sender: 'ai' as const, content: 'Hola, soy tu asistente de salud. Para brindarte recomendaciones precisas de centros médicos cercanos:\n\n1. ¿Me permites acceder a tu ubicación actual?\n\nUna vez autorizada, te proporcionaré:\n- Hospitales cercanos (públicos y privados)\n- Clínicas especializadas\n- Centros de EPS\n- IPS disponibles\n- Centros de urgencias 24/7\n- Distancia aproximada desde tu ubicación\n- Información de contacto y servicios principales\n- Rutas sugeridas para llegar\n\nPor favor, activa tu GPS y autoriza el acceso a tu ubicación para poder ayudarte con recomendaciones personalizadas y relevantes para tu zona.' }
+  ]);
   const [inputValue, setInputValue] = useState('');
   const [stage, setStage] = useState<TriageStage>('location_permission');
-  const [userName, setUserName] = useState('');
-  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [severity, setSeverity] = useState<SeverityLevel>('mild');
   const [showQuickReplies, setShowQuickReplies] = useState(true);
   const [quickReplies, setQuickReplies] = useState<string[]>(['Sí, permitir acceso', 'No, gracias']);
-  const [assessment, setAssessment] = useState<{ severity: SeverityLevel; recommendation: string }>({
-    severity: 'mild',
-    recommendation: '',
-  });
   const [showHospitals, setShowHospitals] = useState(false);
   const [showSymptomSelector, setShowSymptomSelector] = useState(false);
   const [isAITyping, setIsAITyping] = useState(false);
@@ -70,6 +65,18 @@ function ChatInterface() {
     addUserMessage(reply);
     setShowQuickReplies(false);
 
+    if (stage === 'recommendation') {
+      if (reply === 'Sí, mostrar hospitales') {
+        setShowHospitals(true);
+        addAIResponse('Mostrando hospitales cercanos a tu ubicación.');
+      } else {
+        setShowHospitals(false);
+        addAIResponse('Entendido. Si necesitas más ayuda, no dudes en pedírmelo.');
+      }
+      setStage('initial');
+      return;
+    }
+
     if (stage === 'location_permission') {
       if (reply === 'Sí, permitir acceso') {
         setIsAITyping(true);
@@ -78,9 +85,12 @@ function ChatInterface() {
           setUserLocation(location);
           addAIResponse('Gracias por permitir el acceso a tu ubicación. Esto me ayudará a proporcionarte recomendaciones más precisas. ¿Cuál es tu nombre?');
         } catch (error) {
+          setUserLocation(null); // Asegurarse de que userLocation sea null
           addAIResponse('No pude acceder a tu ubicación. Las recomendaciones no estarán personalizadas por ubicación. ¿Cuál es tu nombre?');
         }
       } else {
+        // Establecer explícitamente userLocation como null cuando el usuario niega el permiso
+        setUserLocation(null);
         addAIResponse('Entiendo. Las recomendaciones no estarán personalizadas por ubicación. ¿Cuál es tu nombre?');
       }
       setStage('initial');
@@ -101,9 +111,8 @@ function ChatInterface() {
     addUserMessage(inputValue);
     
     if (stage === 'initial') {
-      setUserName(inputValue);
       setStage('symptoms');
-      addAIResponse(`Gracias ${inputValue}. Por favor, selecciona tus síntomas principales:`);
+      addAIResponse(`Gracias. Por favor, selecciona tus síntomas principales:`);
       setShowSymptomSelector(true);
     }
     
@@ -111,14 +120,12 @@ function ChatInterface() {
   };
 
   const handleSymptomSubmit = (symptoms: string[]) => {
-    setSelectedSymptoms(symptoms);
     setShowSymptomSelector(false);
     
     const symptomsText = symptoms.join(', ');
     addUserMessage(`Mis síntomas son: ${symptomsText}`);
     
     const { severity, recommendation } = getRecommendation(symptoms);
-    setAssessment({ severity, recommendation });
     setSeverity(severity);
     
     addAIResponse(`Basado en tus síntomas, tu situación parece ser de gravedad ${
