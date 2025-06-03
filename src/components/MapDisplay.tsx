@@ -12,13 +12,15 @@ interface MapDisplayProps {
   center: { lat: number; lng: number };
   userLocation?: { lat: number; lng: number } | null;
   isGoogleMapsLoaded: boolean;
+  onMapMove: (newCenter: { lat: number; lng: number }) => void; // Prop para manejar movimiento del mapa
 }
 
 const MapDisplay: React.FC<MapDisplayProps> = ({ 
   hospitals,
   center,
   userLocation,
-  isGoogleMapsLoaded
+  isGoogleMapsLoaded,
+  onMapMove // Desestructurar prop
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -173,9 +175,31 @@ const MapDisplay: React.FC<MapDisplayProps> = ({
 
   }, [hospitals, userLocation, isGoogleMapsLoaded]);
 
+  // Escuchar eventos de movimiento del mapa y actualizar resultados
+  useEffect(() => {
+    if (!isGoogleMapsLoaded || !mapInstanceRef.current) return;
+
+    const map = mapInstanceRef.current;
+
+    const handleIdle = () => {
+      const center = map.getCenter();
+      if (center) {
+        const newCenter = { lat: center.lat(), lng: center.lng() };
+        onMapMove(newCenter); // Llamar a la función para actualizar resultados
+      }
+    };
+
+    map.addListener('idle', handleIdle);
+
+    return () => {
+      google.maps.event.clearListeners(map, 'idle');
+    };
+  }, [isGoogleMapsLoaded, onMapMove]);
+
+  // Mejorar la lógica de asignación de tipos
   const getMarkerIcon = (type: string): string => {
     const baseUrl = 'https://maps.google.com/mapfiles/ms/icons/';
-    
+
     switch (type.toLowerCase()) {
       case 'hospital':
         return `${baseUrl}red-dot.png`;
@@ -186,9 +210,33 @@ const MapDisplay: React.FC<MapDisplayProps> = ({
         return `${baseUrl}blue-dot.png`;
       case 'ips':
         return `${baseUrl}green-dot.png`;
+      case 'centro de salud':
+        return `${baseUrl}yellow-dot.png`;
       default:
         return `${baseUrl}red-dot.png`;
     }
+  };
+
+  // Optimizar el cálculo de distancia
+  const calculateDistance = (from: { lat: number; lng: number }, to: { lat: number; lng: number }): string => {
+    if (!window.google?.maps?.geometry?.spherical) {
+      const R = 6371; // Radio de la Tierra en km
+      const dLat = (to.lat - from.lat) * Math.PI / 180;
+      const dLon = (to.lng - from.lng) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(from.lat * Math.PI / 180) * Math.cos(to.lat * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distance = R * c;
+      return `${distance.toFixed(1)} km`;
+    }
+
+    const distance = window.google.maps.geometry.spherical.computeDistanceBetween(
+      new window.google.maps.LatLng(from.lat, from.lng),
+      new window.google.maps.LatLng(to.lat, to.lng)
+    );
+
+    return `${(distance / 1000).toFixed(1)} km`;
   };
 
   const getTypeColor = (type: string): string => {

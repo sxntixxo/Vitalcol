@@ -11,6 +11,7 @@ interface MedicalCenter {
   address: string;
   location: { lat: number; lng: number };
   distance?: string;
+  distanceKm?: number;
   phone?: string;
   schedule?: string;
   services?: string[];
@@ -32,6 +33,7 @@ const HospitalsSection: React.FC<HospitalsSectionProps> = ({ severity, userLocat
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+  const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const loader = new Loader({
@@ -53,76 +55,113 @@ const HospitalsSection: React.FC<HospitalsSectionProps> = ({ severity, userLocat
   }, []);
 
   useEffect(() => {
-    if (!isGoogleMapsLoaded || !userLocation) {
-      console.log('Waiting for Google Maps API and user location');
+    if (!isGoogleMapsLoaded) {
+      console.log('Esperando la carga de la API de Google Maps');
       return;
     }
 
-    searchNearbyMedicalCenters();
-  }, [isGoogleMapsLoaded, userLocation]);
+    if (!userLocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          searchNearbyMedicalCenters({ lat: latitude, lng: longitude });
+        },
+        (error) => {
+          console.error('Error obteniendo la ubicación del usuario:', error);
+          setError('No se pudo obtener la ubicación del usuario.');
+        }
+      );
+    } else {
+      searchNearbyMedicalCenters(userLocation);
+    }
+  }, [isGoogleMapsLoaded]);
 
-  const searchNearbyMedicalCenters = async () => {
+  // Agregar soporte para paginación con next_page_token
+  const searchNearbyMedicalCenters = async (location: { lat: number; lng: number }, pageToken?: string) => {
     setIsLoading(true);
     setError(null);
+
+    // Limpiar resultados anteriores si no es paginación
+    if (!pageToken) {
+      setMedicalCenters([]);
+    }
 
     try {
       const service = new window.google.maps.places.PlacesService(document.createElement('div'));
       const request = {
-        location: new window.google.maps.LatLng(userLocation!.lat, userLocation!.lng),
-        radius: 5000, // 5 km
-        type: 'hospital', // Filtrar por tipo relevante
-        keyword: 'clínica EPS IPS centro médico', // Palabras clave adicionales
+        location: new window.google.maps.LatLng(location.lat, location.lng),
+        radius: MAX_DISTANCE_KM * 1000,
+        type: 'hospital',
+        keyword: 'hospital EPS IPS centro médico centro de salud',
+        openNow: true,
+        ...(pageToken && { pageToken }),
       };
 
-      const results = await new Promise<google.maps.places.PlaceResult[]>((resolve) => {
-        service.nearbySearch(request, (results, status) => {
+      const results = await new Promise<{ results: google.maps.places.PlaceResult[]; hasNextPage: boolean }>((resolve, reject) => {
+        service.nearbySearch(request, (results, status, pagination) => {
           if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-            resolve(results);
+            resolve({ 
+              results,
+              hasNextPage: !!pagination?.hasNextPage
+            });
           } else {
-            resolve([]); // Si no hay resultados, devolver un array vacío
+            reject(new Error('No se pudieron cargar los centros médicos.'));
           }
         });
       });
 
-      // Filtrar resultados irrelevantes
-      const processedCenters = results
+      const processedCenters = results.results
         .filter((place) => {
           const name = place.name?.toLowerCase() || '';
           const isRelevant = !/(farmacia|droguería|laboratorio|veterinaria|spa|estética|odontología|óptica)/i.test(name);
-          return isRelevant && place.geometry?.location;
+          return isRelevant && !!place.geometry?.location;
         })
-        .map((place) => {
-          const location = {
-            lat: place.geometry!.location!.lat(),
-            lng: place.geometry!.location!.lng(),
+        .map((place): MedicalCenter => {
+          if (!place.geometry?.location) {
+            throw new Error('Ubicación no disponible');
+          }
+
+          const placeLocation = {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
           };
 
-          const distance = calculateDistance(userLocation!, location);
+          const distance = calculateDistance(location, placeLocation);
           const distanceKm = parseFloat(distance.replace(' km', ''));
 
           return {
-            id: place.place_id || Math.random().toString(),
+            id: place.place_id || String(Date.now()),
             name: place.name || 'Centro Médico',
             type: determineType(place),
-            address: place.vicinity || place.formatted_address || 'Dirección no disponible',
-            location,
+            address: place.vicinity || 'Dirección no disponible',
+            location: placeLocation,
             distance,
             distanceKm,
             placeId: place.place_id,
             rating: place.rating,
           };
         })
-        .filter((center) => center.distanceKm <= MAX_DISTANCE_KM) // Filtrar por distancia
-        .sort((a, b) => a.distanceKm - b.distanceKm); // Ordenar por distancia
+        .filter((center) => (center.distanceKm ?? Infinity) <= MAX_DISTANCE_KM)
+        // Ordenar por distancia
+        .sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
 
-      if (processedCenters.length === 0) {
-        setError('No se encontraron centros médicos cercanos. Intenta expandir el área de búsqueda.');
+      // Limitar a 20 resultados si no es paginación
+      const newCenters = !pageToken ? processedCenters.slice(0, 20) : processedCenters;
+
+      setMedicalCenters((prev) => {
+        const combined = [...prev, ...newCenters];
+        // Mantener solo los 20 más cercanos
+        return combined.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity)).slice(0, 20);
+      });
+
+      // Solo mostrar el botón de "Cargar más" si hay más resultados disponibles y tenemos menos de 20
+      if (results.hasNextPage && medicalCenters.length < 20) {
+        setNextPageToken(String(Date.now()));
       } else {
-        setMedicalCenters(processedCenters);
-        setError(null);
+        setNextPageToken(undefined);
       }
     } catch (err) {
-      console.error('Error searching medical centers:', err);
+      console.error('Error buscando centros médicos:', err);
       setError('Error buscando centros médicos. Por favor, intenta de nuevo.');
     } finally {
       setIsLoading(false);
@@ -176,6 +215,13 @@ const HospitalsSection: React.FC<HospitalsSectionProps> = ({ severity, userLocat
       center.type.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Efecto para cargar centros médicos cuando cambia la ubicación o se carga el mapa
+  useEffect(() => {
+    if (userLocation && isGoogleMapsLoaded) {
+      searchNearbyMedicalCenters(userLocation);
+    }
+  }, [userLocation, isGoogleMapsLoaded]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -194,7 +240,7 @@ const HospitalsSection: React.FC<HospitalsSectionProps> = ({ severity, userLocat
             <p className="text-red-600 font-medium">Error al buscar centros médicos</p>
             <p className="text-red-500 text-sm mt-1">{error}</p>
             <button 
-              onClick={() => searchNearbyMedicalCenters()}
+              onClick={() => searchNearbyMedicalCenters(userLocation!)}
               className="mt-2 text-blue-600 hover:text-blue-800 text-sm underline"
             >
               Intentar de nuevo
@@ -239,6 +285,15 @@ const HospitalsSection: React.FC<HospitalsSectionProps> = ({ severity, userLocat
             userLocation={userLocation}
             center={userLocation || { lat: 4.6097, lng: -74.0817 }}
             isGoogleMapsLoaded={isGoogleMapsLoaded}
+            onMapMove={(newCenter) => {
+              // Solo buscar si el centro del mapa está a más de 2.5km del centro actual
+              if (userLocation) {
+                const currentDistance = parseFloat(calculateDistance(userLocation, newCenter).replace(' km', ''));
+                if (currentDistance > MAX_DISTANCE_KM / 2) {
+                  searchNearbyMedicalCenters(newCenter);
+                }
+              }
+            }}
           />
         </div>
       )}
@@ -274,10 +329,21 @@ const HospitalsSection: React.FC<HospitalsSectionProps> = ({ severity, userLocat
             No pudimos encontrar centros médicos en un radio de {MAX_DISTANCE_KM} km de tu ubicación.
           </p>
           <button 
-            onClick={() => searchNearbyMedicalCenters()}
+            onClick={() => searchNearbyMedicalCenters(userLocation!)}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Buscar de nuevo
+          </button>
+        </div>
+      )}
+
+      {nextPageToken && (
+        <div className="text-center">
+          <button
+            onClick={() => searchNearbyMedicalCenters(userLocation!, nextPageToken)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Cargar más resultados
           </button>
         </div>
       )}
