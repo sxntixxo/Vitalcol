@@ -10,7 +10,6 @@ interface MapDisplayProps {
   userLocation: { lat: number; lng: number } | null;
   center: { lat: number; lng: number };
   isGoogleMapsLoaded: boolean;
-  onMapMove?: (center: { lat: number; lng: number }) => void;
 }
 
 const MapDisplay: React.FC<MapDisplayProps> = ({
@@ -18,12 +17,10 @@ const MapDisplay: React.FC<MapDisplayProps> = ({
   userLocation,
   center,
   isGoogleMapsLoaded,
-  onMapMove,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
-  const [selectedHospital, setSelectedHospital] = useState<string | null>(null);
   const [infoWindow, setInfoWindow] = useState<google.maps.InfoWindow | null>(null);
 
   // Colores para los diferentes tipos de centros médicos
@@ -55,19 +52,6 @@ const MapDisplay: React.FC<MapDisplayProps> = ({
     const infoWindowInstance = new google.maps.InfoWindow();
     setInfoWindow(infoWindowInstance);
 
-    // Agregar listener para detectar movimiento del mapa
-    if (onMapMove) {
-      map.addListener('idle', () => {
-        const newCenter = map.getCenter();
-        if (newCenter) {
-          onMapMove({
-            lat: newCenter.lat(),
-            lng: newCenter.lng(),
-          });
-        }
-      });
-    }
-
     // Limpiar al desmontar
     return () => {
       if (googleMapRef.current) {
@@ -77,7 +61,7 @@ const MapDisplay: React.FC<MapDisplayProps> = ({
         infoWindowInstance.close();
       }
     };
-  }, [isGoogleMapsLoaded, center.lat, center.lng, onMapMove]);
+  }, [isGoogleMapsLoaded, center.lat, center.lng]);
 
   // Actualizar marcadores cuando cambian los hospitales
   useEffect(() => {
@@ -131,7 +115,6 @@ const MapDisplay: React.FC<MapDisplayProps> = ({
           
           infoWindow.setContent(content);
           infoWindow.open(googleMapRef.current, marker);
-          setSelectedHospital(hospital.id);
         }
       });
 
