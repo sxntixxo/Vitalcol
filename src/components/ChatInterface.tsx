@@ -38,15 +38,19 @@ function ChatInterface() {
 
   const addAIResponsesSequentially = (contents: string[], delay: number = 1000) => {
     let accumulatedDelay = 0;
-    contents.forEach((content) => {
+    setIsAITyping(true); // Start typing animation
+
+    contents.forEach((content, index) => {
       accumulatedDelay += delay;
       setTimeout(() => {
         setMessages((prev) => [...prev, { sender: 'ai', content }]);
+
+        // Stop typing animation after the last message
+        if (index === contents.length - 1) {
+          setIsAITyping(false);
+        }
       }, accumulatedDelay);
     });
-    setTimeout(() => {
-      setIsAITyping(false);
-    }, accumulatedDelay);
   };
 
   const addUserMessage = (content: string) => {
