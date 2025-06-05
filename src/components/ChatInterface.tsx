@@ -36,6 +36,19 @@ function ChatInterface() {
     }, delay);
   };
 
+  const addAIResponsesSequentially = (contents: string[], delay: number = 1000) => {
+    let accumulatedDelay = 0;
+    contents.forEach((content) => {
+      accumulatedDelay += delay;
+      setTimeout(() => {
+        setMessages((prev) => [...prev, { sender: 'ai', content }]);
+      }, accumulatedDelay);
+    });
+    setTimeout(() => {
+      setIsAITyping(false);
+    }, accumulatedDelay);
+  };
+
   const addUserMessage = (content: string) => {
     setMessages((prev) => [...prev, { sender: 'user', content }]);
   };
@@ -112,8 +125,16 @@ function ChatInterface() {
     
     if (stage === 'initial') {
       setStage('symptoms');
-      addAIResponse(`Gracias. Por favor, selecciona tus síntomas principales:`);
-      setShowSymptomSelector(true);
+      addAIResponsesSequentially([
+        `Gracias ${inputValue}. Por favor, selecciona tus síntomas principales:`
+      ]);
+      setTimeout(() => {
+        setIsAITyping(true); // Show typing animation
+        setTimeout(() => {
+          setShowSymptomSelector(true);
+          setIsAITyping(false); // Hide typing animation
+        }, 1000); // Delay for symptom selector
+      }, 1000); // Ensure message appears first
     }
     
     setInputValue('');
@@ -133,14 +154,16 @@ function ChatInterface() {
     }.`);
     
     setTimeout(() => {
-      addAIResponse(recommendation);
+      addAIResponsesSequentially([
+        recommendation,
+        '¿Te gustaría ver los hospitales cercanos a tu ubicación?'
+      ]);
       setStage('recommendation');
-      
+
       setTimeout(() => {
-        addAIResponse('¿Te gustaría ver los hospitales cercanos a tu ubicación?');
         setQuickReplies(['Sí, mostrar hospitales', 'No, gracias']);
         setShowQuickReplies(true);
-      }, 1500);
+      }, 1000);
     }, 1500);
   };
 
