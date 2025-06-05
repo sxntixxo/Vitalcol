@@ -14,3 +14,22 @@ export interface ErrorResponse {
   code: string;
   details?: unknown;
 }
+
+export type TriageStage =
+  | 'location_permission'
+  | 'symptoms'
+  | 'recommendation'
+  | 'eps_selection'
+  | 'initial';
+
+export type Message = {
+  sender: 'ai' | 'user';
+  content: string;
+};
+
+export type SeverityLevel = 'mild' | 'moderate' | 'severe';
+
+export type UserLocation = {
+  lat: number;
+  lng: number;
+};

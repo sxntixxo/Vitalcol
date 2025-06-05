@@ -5,7 +5,8 @@ import QuickReplyButtons from './QuickReplyButtons';
 import HospitalsSection from './HospitalsSection';
 import SymptomSelector from './SymptomSelector';
 import AITypingIndicator from './AITypingIndicator';
-import { Message, TriageStage, SeverityLevel, UserLocation } from '../types';
+import EPSSelector from './EPSSelector';
+import { Message, TriageStage, SeverityLevel, UserLocation } from '../api/types';
 import { getRecommendation } from '../utils/triageLogic';
 
 function ChatInterface() {
@@ -21,6 +22,7 @@ function ChatInterface() {
   const [showSymptomSelector, setShowSymptomSelector] = useState(false);
   const [isAITyping, setIsAITyping] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [selectedEPS, setSelectedEPS] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +83,13 @@ function ChatInterface() {
   const handleQuickReply = async (reply: string) => {
     addUserMessage(reply);
     setShowQuickReplies(false);
+
+    if (stage === 'recommendation' && reply === 'Sí, mostrar hospitales') {
+      setShowHospitals(false); // Ensure hospitals are hidden
+      setStage('eps_selection'); // Transition to EPS selection stage
+      addAIResponse('Por favor, selecciona tu EPS para continuar.');
+      return;
+    }
 
     if (stage === 'recommendation') {
       if (reply === 'Sí, mostrar hospitales') {
@@ -171,6 +180,12 @@ function ChatInterface() {
     }, 1500);
   };
 
+  const handleEPSSelect = (selectedEPS: string) => {
+    console.log(`Selected EPS: ${selectedEPS}`);
+    setStage('recommendation'); // Transition to the recommendation stage
+    setSelectedEPS(selectedEPS); // Save the selected EPS in state
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
@@ -190,6 +205,14 @@ function ChatInterface() {
               />
             )}
             {showHospitals && <HospitalsSection severity={severity} userLocation={userLocation} />}
+            {stage === 'eps_selection' && (
+              <EPSSelector onSelect={handleEPSSelect} />
+            )}
+            {selectedEPS && (
+              <div className="mt-4 text-sm text-gray-600">
+                EPS seleccionada: {selectedEPS}
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
         </div>
