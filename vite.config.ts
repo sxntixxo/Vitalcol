@@ -10,4 +10,9 @@ export default defineConfig({
   server: {
     port: 3000, // Fija el puerto a 3000
   },
+  resolve: {
+    alias: {
+      '/assets': '/src/assets', // Asegura que los archivos estáticos se sirvan correctamente
+    },
+  },
 });

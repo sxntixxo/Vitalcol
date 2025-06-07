@@ -1,27 +1,27 @@
 import { useState } from 'react';
 
 const epsList = [
-  { name: 'Salud Total EPS S.A.', logo: '/assets/logos/salud_total_eps.png' },
-  { name: 'EPS Sanitas', logo: '/assets/logos/eps_sanitas.png' },
-  { name: 'EPS Sura', logo: '/assets/logos/eps_sura.png' },
-  { name: 'Famisanar EPS', logo: '/assets/logos/famisanar_eps.png' },
-  { name: 'Compensar EPS', logo: '/assets/logos/compensar_eps.png' },
-  { name: 'Nueva EPS', logo: '/assets/logos/nueva_eps.png' },
-  { name: 'Aliansalud EPS', logo: '/assets/logos/aliansalud_eps.png' },
-  { name: 'Servicio Occidental de Salud (S.O.S.)', logo: '/assets/logos/sos_eps.png' },
-  { name: 'Comfenalco Valle EPS', logo: '/assets/logos/comfenalco_valle_eps.png' },
-  { name: 'Coosalud EPS-S', logo: '/assets/logos/coosalud_eps.png' },
-  { name: 'Mutual Ser EPS', logo: '/assets/logos/mutual_ser_eps.png' },
-  { name: 'Capital Salud EPS', logo: '/assets/logos/capital_salud_eps.png' },
-  { name: 'Savia Salud EPS', logo: '/assets/logos/savia_salud_eps.png' },
-  { name: 'EPS Familiar de Colombia', logo: '/assets/logos/eps_familiar_colombia.png' },
-  { name: 'Asmet Salud', logo: '/assets/logos/asmet_salud.png' },
-  { name: 'Emssanar E.S.S.', logo: '/assets/logos/emssanar_eps.png' },
-  { name: 'Comfachocó EPS', logo: '/assets/logos/comfachoco_eps.png' },
-  { name: 'Dusakawi EPS', logo: '/assets/logos/dusakawi_eps.png' },
-  { name: 'Salud Bolívar EPS SAS', logo: '/assets/logos/salud_bolivar_eps.png' },
-  { name: 'Pijaos Salud EPSI', logo: '/assets/logos/pijaos_salud_eps.png' },
-  { name: 'AIC EPSI (Asociación Indígena del Cauca)', logo: '/assets/logos/aic_eps.png' }
+  { name: 'Salud Total EPS S.A.', logo: '/assets/logos/salud_total_eps.jpg' },
+  { name: 'EPS Sanitas', logo: '/assets/logos/eps_sanitas.jpg' },
+  { name: 'EPS Sura', logo: '/assets/logos/eps_sura.jpg' },
+  { name: 'Famisanar EPS', logo: '/assets/logos/famisanar_eps.jpg' },
+  { name: 'Compensar EPS', logo: '/assets/logos/compensar_eps.jpg' },
+  { name: 'Nueva EPS', logo: '/assets/logos/nueva_eps.jpg' },
+  { name: 'Aliansalud EPS', logo: '/assets/logos/aliansalud_eps.jpg' },
+  { name: 'Servicio Occidental de Salud (S.O.S.)', logo: '/assets/logos/sos_eps.jpg' },
+  { name: 'Comfenalco Valle EPS', logo: '/assets/logos/comfenalco_valle_eps.jpg' },
+  { name: 'Coosalud EPS-S', logo: '/assets/logos/coosalud_eps.jpg' },
+  { name: 'Mutual Ser EPS', logo: '/assets/logos/mutual_ser_eps.jpg' },
+  { name: 'Capital Salud EPS', logo: '/assets/logos/capital_salud_eps.jpg' },
+  { name: 'Savia Salud EPS', logo: '/assets/logos/savia_salud_eps.jpg' },
+  { name: 'EPS Familiar de Colombia', logo: '/assets/logos/eps_familiar_colombia.jpg' },
+  { name: 'Asmet Salud', logo: '/assets/logos/asmet_salud.jpg' },
+  { name: 'Emssanar E.S.S.', logo: '/assets/logos/emssanar_eps.jpg' },
+  { name: 'Comfachocó EPS', logo: '/assets/logos/comfachoco_eps.jpg' },
+  { name: 'Dusakawi EPS', logo: '/assets/logos/dusakawi_eps.jpg' },
+  { name: 'Salud Bolívar EPS SAS', logo: '/assets/logos/salud_bolivar_eps.jpg' },
+  { name: 'Pijaos Salud EPSI', logo: '/assets/logos/pijaos_salud_eps.jpg' },
+  { name: 'AIC EPSI (Asociación Indígena del Cauca)', logo: '/assets/logos/aic_eps.jpg' }
 ];
 
 const EPSSelector = ({ onSelect }: { onSelect: (eps: string) => void }) => {
