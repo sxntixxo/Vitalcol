@@ -44,13 +44,13 @@ const EPSSelector = ({ onSelect }: { onSelect: (eps: string) => void }) => {
         {filteredEPS.map((eps) => (
           <div
             key={eps.name}
-            className="eps-item border rounded-lg p-4 flex items-center cursor-pointer hover:bg-gray-100"
+            className="eps-item border rounded-lg p-4 flex items-center cursor-pointer hover:bg-gray-100 w-full h-24" // Ajuste para uniformar tamaño
             onClick={() => onSelect(eps.name)}
           >
             <img
               src={eps.logo}
               alt={eps.name}
-              className="eps-logo w-12 h-12 mr-4"
+              className="eps-logo w-16 h-16 mr-4 object-contain"
             />
             <span className="eps-name font-medium">{eps.name}</span>
           </div>
