@@ -350,18 +350,6 @@ const HospitalsSection: React.FC<HospitalsSectionProps> = ({ severity, userLocat
     setSelectedType(type);
   };
 
-  // Manejar cambio en el centro del mapa
-  const handleMapMove = (newCenter: { lat: number; lng: number }) => {
-    // Solo buscar si el centro del mapa está a más de 2.5km del centro actual
-    if (mapCenter) {
-      const currentDistance = parseFloat(calculateDistance(mapCenter, newCenter).replace(' km', ''));
-      if (currentDistance > MAX_DISTANCE_KM / 2) {
-        setMapCenter(newCenter);
-        searchNearbyMedicalCenters(newCenter);
-      }
-    }
-  };
-
   // Cargar más resultados
   const loadMoreResults = () => {
     if (nextPageToken && mapCenter) {
@@ -461,7 +449,6 @@ const HospitalsSection: React.FC<HospitalsSectionProps> = ({ severity, userLocat
             userLocation={userLocation || mapCenter}
             center={mapCenter}
             isGoogleMapsLoaded={isGoogleMapsLoaded}
-            onMapMove={handleMapMove}
           />
         </div>
       )}
@@ -481,9 +468,6 @@ const HospitalsSection: React.FC<HospitalsSectionProps> = ({ severity, userLocat
               address={center.address}
               location={center.location}
               distance={center.distance}
-              schedule={center.schedule}
-              phone={center.phone}
-              services={center.services}
               photoUrl={center.photoUrl}
             />
           ))}

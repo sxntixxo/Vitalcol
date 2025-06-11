@@ -1,5 +1,3 @@
-import React from 'react';
-
 const AITypingIndicator = () => {
   return (
     <div className="flex items-center space-x-1 bg-white rounded-lg px-4 py-2 w-fit animate-fade-in">

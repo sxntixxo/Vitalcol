@@ -8,6 +8,7 @@ import AITypingIndicator from './AITypingIndicator';
 import EPSSelector from './EPSSelector';
 import { Message, TriageStage, SeverityLevel, UserLocation } from '../api/types';
 import { getRecommendation } from '../utils/triageLogic';
+import { fetchChatGPTRecommendation } from '../utils/chatGPT';
 
 function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
@@ -186,6 +187,11 @@ function ChatInterface() {
     setSelectedEPS(selectedEPS); // Save the selected EPS in state
   };
 
+  const handleAIResponse = async (userMessage: string) => {
+    const aiResponse = await fetchChatGPTRecommendation(userMessage);
+    setMessages((prevMessages) => [...prevMessages, { sender: 'ai', content: aiResponse }]);
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
@@ -211,6 +217,13 @@ function ChatInterface() {
             {selectedEPS && (
               <div className="mt-4 text-sm text-gray-600">
                 EPS seleccionada: {selectedEPS}
+              </div>
+            )}
+            {stage === 'recommendation' && (
+              <div className="flex items-center space-x-4">
+                <p className="text-gray-700 text-sm">
+                  {messages[messages.length - 1]?.content}
+                </p>
               </div>
             )}
             <div ref={messagesEndRef} />
