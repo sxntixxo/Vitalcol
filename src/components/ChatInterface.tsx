@@ -219,13 +219,6 @@ function ChatInterface() {
                 EPS seleccionada: {selectedEPS}
               </div>
             )}
-            {stage === 'recommendation' && (
-              <div className="flex items-center space-x-4">
-                <p className="text-gray-700 text-sm">
-                  {messages[messages.length - 1]?.content}
-                </p>
-              </div>
-            )}
             <div ref={messagesEndRef} />
           </div>
         </div>
