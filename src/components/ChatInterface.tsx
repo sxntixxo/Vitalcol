@@ -9,7 +9,6 @@ import EPSSelector from './EPSSelector';
 import EPSFacilitiesDisplay from './EPSFacilitiesDisplay';
 import { Message, TriageStage, SeverityLevel, UserLocation } from '../api/types';
 import { getRecommendation } from '../utils/triageLogic';
-import { fetchChatGPTRecommendation } from '../utils/chatGPT';
 
 function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
@@ -24,7 +23,9 @@ function ChatInterface() {
   const [showSymptomSelector, setShowSymptomSelector] = useState(false);
   const [isAITyping, setIsAITyping] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
-  const [selectedEPS, setSelectedEPS] = useState<{ id: string; name: string; logo: string } | null>(null);
+  const [selectedEPS, setSelectedEPS] = useState<string | null>(null);
+  const [showEPSSelector, setShowEPSSelector] = useState(false);
+  const [showEPSFacilities, setShowEPSFacilities] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -42,14 +43,13 @@ function ChatInterface() {
 
   const addAIResponsesSequentially = (contents: string[], delay: number = 1000) => {
     let accumulatedDelay = 0;
-    setIsAITyping(true); // Start typing animation
+    setIsAITyping(true);
 
     contents.forEach((content, index) => {
       accumulatedDelay += delay;
       setTimeout(() => {
         setMessages((prev) => [...prev, { sender: 'ai', content }]);
 
-        // Stop typing animation after the last message
         if (index === contents.length - 1) {
           setIsAITyping(false);
         }
@@ -87,9 +87,10 @@ function ChatInterface() {
     setShowQuickReplies(false);
 
     if (stage === 'recommendation' && reply === 'Sí, mostrar hospitales') {
-      setShowHospitals(false); // Ensure hospitals are hidden
-      setStage('eps_selection'); // Transition to EPS selection stage
-      addAIResponse('Por favor, selecciona tu EPS para continuar y ver los centros médicos afiliados cercanos a tu ubicación.');
+      setShowHospitals(false);
+      setStage('eps_selection');
+      setShowEPSSelector(true);
+      addAIResponse('Por favor, selecciona tu EPS para continuar y ver los centros médicos afiliados.');
       return;
     }
 
@@ -113,11 +114,10 @@ function ChatInterface() {
           setUserLocation(location);
           addAIResponse('Gracias por permitir el acceso a tu ubicación. Esto me ayudará a proporcionarte recomendaciones más precisas. ¿Cuál es tu nombre?');
         } catch (error) {
-          setUserLocation(null); // Asegurarse de que userLocation sea null
+          setUserLocation(null);
           addAIResponse('No pude acceder a tu ubicación. Las recomendaciones no estarán personalizadas por ubicación. ¿Cuál es tu nombre?');
         }
       } else {
-        // Establecer explícitamente userLocation como null cuando el usuario niega el permiso
         setUserLocation(null);
         addAIResponse('Entiendo. Las recomendaciones no estarán personalizadas por ubicación. ¿Cuál es tu nombre?');
       }
@@ -144,93 +144,49 @@ function ChatInterface() {
         `Gracias ${inputValue}. Por favor, selecciona tus síntomas principales:`
       ]);
       setTimeout(() => {
-        setIsAITyping(true); // Show typing animation
+        setIsAITyping(true);
         setTimeout(() => {
           setShowSymptomSelector(true);
-          setIsAITyping(false); // Hide typing animation
-        }, 1000); // Delay for symptom selector
-      }, 1000); // Ensure message appears first
+          setIsAITyping(false);
+        }, 1000);
+      }, 1000);
     }
     
     setInputValue('');
   };
 
-  const handleSymptomSubmit = async (symptoms: string[]) => {
+  const handleSymptomSubmit = (symptoms: string[]) => {
     setShowSymptomSelector(false);
     
     const symptomsText = symptoms.join(', ');
     addUserMessage(`Mis síntomas son: ${symptomsText}`);
     
-    // Get severity for hospital section
-    const { severity } = getRecommendation(symptoms);
+    const { severity, recommendation } = getRecommendation(symptoms);
     setSeverity(severity);
     
-    // Create prompt for AI recommendation
-    const prompt = `Como asistente médico virtual, proporciona una recomendación médica profesional y empática para un paciente que presenta los siguientes síntomas: ${symptomsText}. 
+    addAIResponse(`Basado en tus síntomas, tu situación parece ser de gravedad ${
+      severity === 'mild' ? 'LEVE' : severity === 'moderate' ? 'MODERADA' : 'GRAVE'
+    }.`);
+    
+    setTimeout(() => {
+      addAIResponsesSequentially([
+        recommendation,
+        '¿Te gustaría ver los hospitales cercanos a tu ubicación?'
+      ]);
+      setStage('recommendation');
 
-La recomendación debe:
-- Ser clara y comprensible
-- Incluir medidas inmediatas que puede tomar
-- Indicar si necesita atención médica urgente, programada o puede manejarse en casa
-- Ser empática pero profesional
-- No exceder 150 palabras
-
-Responde únicamente con la recomendación médica, sin introducción ni explicaciones adicionales.`;
-
-    try {
-      setIsAITyping(true);
-      
-      // Get AI recommendation
-      const aiRecommendation = await fetchChatGPTRecommendation(prompt);
-      
-      setIsAITyping(false);
-      
-      // Add AI recommendation and follow-up question
       setTimeout(() => {
-        addAIResponsesSequentially([
-          aiRecommendation,
-          '¿Te gustaría ver los hospitales cercanos a tu ubicación?'
-        ]);
-        setStage('recommendation');
-
-        setTimeout(() => {
-          setQuickReplies(['Sí, mostrar hospitales', 'No, gracias']);
-          setShowQuickReplies(true);
-        }, 2000);
-      }, 500);
-    } catch (error) {
-      console.error('Error getting AI recommendation:', error);
-      
-      // Fallback to original logic if AI fails
-      const { recommendation } = getRecommendation(symptoms);
-      
-      setIsAITyping(false);
-      
-      setTimeout(() => {
-        addAIResponsesSequentially([
-          recommendation,
-          '¿Te gustaría ver los hospitales cercanos a tu ubicación?'
-        ]);
-        setStage('recommendation');
-
-        setTimeout(() => {
-          setQuickReplies(['Sí, mostrar hospitales', 'No, gracias']);
-          setShowQuickReplies(true);
-        }, 2000);
-      }, 500);
-    }
+        setQuickReplies(['Sí, mostrar hospitales', 'No, gracias']);
+        setShowQuickReplies(true);
+      }, 1000);
+    }, 1500);
   };
 
-  const handleEPSSelect = (selectedEPSData: { id: string; name: string; logo: string }) => {
-    console.log(`Selected EPS:`, selectedEPSData);
-    setSelectedEPS(selectedEPSData);
-    setStage('display_eps_facilities');
-    addAIResponse(`Perfecto. Buscando centros médicos afiliados a ${selectedEPSData.name} cerca de tu ubicación...`);
-  };
-
-  const handleAIResponse = async (userMessage: string) => {
-    const aiResponse = await fetchChatGPTRecommendation(userMessage);
-    setMessages((prevMessages) => [...prevMessages, { sender: 'ai', content: aiResponse }]);
+  const handleEPSSelect = (selectedEPSName: string) => {
+    setSelectedEPS(selectedEPSName);
+    setShowEPSSelector(false);
+    setShowEPSFacilities(true);
+    addAIResponse(`Perfecto. Mostrando centros médicos afiliados a ${selectedEPSName} cerca de tu ubicación.`);
   };
 
   return (
@@ -252,14 +208,13 @@ Responde únicamente con la recomendación médica, sin introducción ni explica
               />
             )}
             {showHospitals && <HospitalsSection severity={severity} userLocation={userLocation} />}
-            {stage === 'eps_selection' && (
+            {showEPSSelector && (
               <EPSSelector onSelect={handleEPSSelect} />
             )}
-            {stage === 'display_eps_facilities' && selectedEPS && userLocation && (
-              <EPSFacilitiesDisplay
-                selectedEPS={selectedEPS}
-                userLocation={userLocation}
-                severity={severity}
+            {showEPSFacilities && selectedEPS && (
+              <EPSFacilitiesDisplay 
+                selectedEPS={selectedEPS} 
+                userLocation={userLocation} 
               />
             )}
             <div ref={messagesEndRef} />
