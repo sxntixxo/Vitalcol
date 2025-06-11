@@ -154,31 +154,70 @@ function ChatInterface() {
     setInputValue('');
   };
 
-  const handleSymptomSubmit = (symptoms: string[]) => {
+  const handleSymptomSubmit = async (symptoms: string[]) => {
     setShowSymptomSelector(false);
     
     const symptomsText = symptoms.join(', ');
     addUserMessage(`Mis síntomas son: ${symptomsText}`);
     
-    const { severity, recommendation } = getRecommendation(symptoms);
+    // Get severity for hospital section
+    const { severity } = getRecommendation(symptoms);
     setSeverity(severity);
     
-    addAIResponse(`Basado en tus síntomas, tu situación parece ser de gravedad ${
-      severity === 'mild' ? 'LEVE' : severity === 'moderate' ? 'MODERADA' : 'GRAVE'
-    }.`);
-    
-    setTimeout(() => {
-      addAIResponsesSequentially([
-        recommendation,
-        '¿Te gustaría ver los hospitales cercanos a tu ubicación?'
-      ]);
-      setStage('recommendation');
+    // Create prompt for AI recommendation
+    const prompt = `Como asistente médico virtual, proporciona una recomendación médica profesional y empática para un paciente que presenta los siguientes síntomas: ${symptomsText}. 
 
+La recomendación debe:
+- Ser clara y comprensible
+- Incluir medidas inmediatas que puede tomar
+- Indicar si necesita atención médica urgente, programada o puede manejarse en casa
+- Ser empática pero profesional
+- No exceder 150 palabras
+
+Responde únicamente con la recomendación médica, sin introducción ni explicaciones adicionales.`;
+
+    try {
+      setIsAITyping(true);
+      
+      // Get AI recommendation
+      const aiRecommendation = await fetchChatGPTRecommendation(prompt);
+      
+      setIsAITyping(false);
+      
+      // Add AI recommendation and follow-up question
       setTimeout(() => {
-        setQuickReplies(['Sí, mostrar hospitales', 'No, gracias']);
-        setShowQuickReplies(true);
-      }, 1000);
-    }, 1500);
+        addAIResponsesSequentially([
+          aiRecommendation,
+          '¿Te gustaría ver los hospitales cercanos a tu ubicación?'
+        ]);
+        setStage('recommendation');
+
+        setTimeout(() => {
+          setQuickReplies(['Sí, mostrar hospitales', 'No, gracias']);
+          setShowQuickReplies(true);
+        }, 2000);
+      }, 500);
+    } catch (error) {
+      console.error('Error getting AI recommendation:', error);
+      
+      // Fallback to original logic if AI fails
+      const { recommendation } = getRecommendation(symptoms);
+      
+      setIsAITyping(false);
+      
+      setTimeout(() => {
+        addAIResponsesSequentially([
+          recommendation,
+          '¿Te gustaría ver los hospitales cercanos a tu ubicación?'
+        ]);
+        setStage('recommendation');
+
+        setTimeout(() => {
+          setQuickReplies(['Sí, mostrar hospitales', 'No, gracias']);
+          setShowQuickReplies(true);
+        }, 2000);
+      }, 500);
+    }
   };
 
   const handleEPSSelect = (selectedEPS: string) => {
