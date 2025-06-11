@@ -6,6 +6,7 @@ import HospitalsSection from './HospitalsSection';
 import SymptomSelector from './SymptomSelector';
 import AITypingIndicator from './AITypingIndicator';
 import EPSSelector from './EPSSelector';
+import EPSFacilitiesDisplay from './EPSFacilitiesDisplay';
 import { Message, TriageStage, SeverityLevel, UserLocation } from '../api/types';
 import { getRecommendation } from '../utils/triageLogic';
 import { fetchChatGPTRecommendation } from '../utils/chatGPT';
@@ -23,7 +24,7 @@ function ChatInterface() {
   const [showSymptomSelector, setShowSymptomSelector] = useState(false);
   const [isAITyping, setIsAITyping] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
-  const [selectedEPS, setSelectedEPS] = useState<string | null>(null);
+  const [selectedEPS, setSelectedEPS] = useState<{ id: string; name: string; logo: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -88,7 +89,7 @@ function ChatInterface() {
     if (stage === 'recommendation' && reply === 'Sí, mostrar hospitales') {
       setShowHospitals(false); // Ensure hospitals are hidden
       setStage('eps_selection'); // Transition to EPS selection stage
-      addAIResponse('Por favor, selecciona tu EPS para continuar.');
+      addAIResponse('Por favor, selecciona tu EPS para continuar y ver los centros médicos afiliados cercanos a tu ubicación.');
       return;
     }
 
@@ -220,10 +221,11 @@ Responde únicamente con la recomendación médica, sin introducción ni explica
     }
   };
 
-  const handleEPSSelect = (selectedEPS: string) => {
-    console.log(`Selected EPS: ${selectedEPS}`);
-    setStage('recommendation'); // Transition to the recommendation stage
-    setSelectedEPS(selectedEPS); // Save the selected EPS in state
+  const handleEPSSelect = (selectedEPSData: { id: string; name: string; logo: string }) => {
+    console.log(`Selected EPS:`, selectedEPSData);
+    setSelectedEPS(selectedEPSData);
+    setStage('display_eps_facilities');
+    addAIResponse(`Perfecto. Buscando centros médicos afiliados a ${selectedEPSData.name} cerca de tu ubicación...`);
   };
 
   const handleAIResponse = async (userMessage: string) => {
@@ -253,10 +255,12 @@ Responde únicamente con la recomendación médica, sin introducción ni explica
             {stage === 'eps_selection' && (
               <EPSSelector onSelect={handleEPSSelect} />
             )}
-            {selectedEPS && (
-              <div className="mt-4 text-sm text-gray-600">
-                EPS seleccionada: {selectedEPS}
-              </div>
+            {stage === 'display_eps_facilities' && selectedEPS && userLocation && (
+              <EPSFacilitiesDisplay
+                selectedEPS={selectedEPS}
+                userLocation={userLocation}
+                severity={severity}
+              />
             )}
             <div ref={messagesEndRef} />
           </div>
