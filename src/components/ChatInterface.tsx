@@ -12,13 +12,13 @@ import { getRecommendation } from '../utils/triageLogic';
 
 function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
-    { sender: 'ai' as const, content: 'Hola, soy tu asistente de salud. Para brindarte recomendaciones precisas de centros médicos cercanos:\n\n1. ¿Me permites acceder a tu ubicación actual?\n\nUna vez autorizada, te proporcionaré:\n- Hospitales cercanos (públicos y privados)\n- Clínicas especializadas\n- Centros de EPS\n- IPS disponibles\n- Centros de urgencias 24/7\n- Distancia aproximada desde tu ubicación\n- Información de contacto y servicios principales\n- Rutas sugeridas para llegar\n\nPor favor, activa tu GPS y autoriza el acceso a tu ubicación para poder ayudarte con recomendaciones personalizadas y relevantes para tu zona.' }
+    { sender: 'ai' as const, content: 'Buenos días. Soy su asistente virtual de salud especializado en orientación médica. Para brindarle recomendaciones precisas y personalizadas sobre centros médicos en su área, requiero acceso a su ubicación geográfica actual.\n\n**Servicios que le proporcionaré:**\n\n• **Hospitales públicos y privados** cercanos a su ubicación\n• **Clínicas especializadas** por área médica\n• **Centros de EPS** afiliados a su entidad de salud\n• **Instituciones Prestadoras de Servicios (IPS)** disponibles\n• **Centros de urgencias** con atención 24/7\n• **Cálculo de distancias** y tiempos de desplazamiento\n• **Información de contacto** y servicios especializados\n• **Rutas optimizadas** para llegar a cada centro médico\n\n**Para continuar, por favor:**\nActive la geolocalización de su dispositivo y autorice el acceso a su ubicación. Esto me permitirá ofrecerle recomendaciones médicas relevantes y centros de atención apropiados para su zona geográfica específica.\n\n¿Autoriza el acceso a su ubicación actual?' }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [stage, setStage] = useState<TriageStage>('location_permission');
   const [severity, setSeverity] = useState<SeverityLevel>('mild');
   const [showQuickReplies, setShowQuickReplies] = useState(true);
-  const [quickReplies, setQuickReplies] = useState<string[]>(['Sí, permitir acceso', 'No, gracias']);
+  const [quickReplies, setQuickReplies] = useState<string[]>(['Sí, autorizar acceso', 'No, continuar sin ubicación']);
   const [showHospitals, setShowHospitals] = useState(false);
   const [showSymptomSelector, setShowSymptomSelector] = useState(false);
   const [isAITyping, setIsAITyping] = useState(false);
@@ -64,7 +64,7 @@ function ChatInterface() {
   const handleLocationPermission = () => {
     return new Promise<UserLocation>((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported by your browser'));
+        reject(new Error('La geolocalización no está disponible en su navegador'));
         return;
       }
 
@@ -86,40 +86,40 @@ function ChatInterface() {
     addUserMessage(reply);
     setShowQuickReplies(false);
 
-    if (stage === 'recommendation' && reply === 'Sí, mostrar hospitales') {
+    if (stage === 'recommendation' && reply === 'Sí, mostrar centros médicos') {
       setShowHospitals(false);
       setStage('eps_selection');
       setShowEPSSelector(true);
-      addAIResponse('Por favor, selecciona tu EPS para continuar y ver los centros médicos afiliados.');
+      addAIResponse('Excelente. Por favor, seleccione su Entidad Promotora de Salud (EPS) para continuar con la búsqueda de centros médicos afiliados.');
       return;
     }
 
     if (stage === 'recommendation') {
-      if (reply === 'Sí, mostrar hospitales') {
+      if (reply === 'Sí, mostrar centros médicos') {
         setShowHospitals(true);
-        addAIResponse('Mostrando hospitales cercanos a tu ubicación.');
+        addAIResponse('Procesando búsqueda de centros médicos en su área geográfica.');
       } else {
         setShowHospitals(false);
-        addAIResponse('Entendido. Si necesitas más ayuda, no dudes en pedírmelo.');
+        addAIResponse('Entendido. Quedo a su disposición para cualquier consulta adicional que requiera.');
       }
       setStage('initial');
       return;
     }
 
     if (stage === 'location_permission') {
-      if (reply === 'Sí, permitir acceso') {
+      if (reply === 'Sí, autorizar acceso') {
         setIsAITyping(true);
         try {
           const location = await handleLocationPermission();
           setUserLocation(location);
-          addAIResponse('Gracias por permitir el acceso a tu ubicación. Esto me ayudará a proporcionarte recomendaciones más precisas. ¿Cuál es tu nombre?');
+          addAIResponse('Perfecto. Su ubicación ha sido registrada exitosamente. Esto me permitirá proporcionarle recomendaciones médicas precisas y personalizadas. Para continuar, por favor indíqueme su nombre completo.');
         } catch (error) {
           setUserLocation(null);
-          addAIResponse('No pude acceder a tu ubicación. Las recomendaciones no estarán personalizadas por ubicación. ¿Cuál es tu nombre?');
+          addAIResponse('No fue posible acceder a su ubicación en este momento. Continuaremos sin personalización geográfica. Por favor, indíqueme su nombre completo para proceder.');
         }
       } else {
         setUserLocation(null);
-        addAIResponse('Entiendo. Las recomendaciones no estarán personalizadas por ubicación. ¿Cuál es tu nombre?');
+        addAIResponse('Entendido. Procederemos sin personalización por ubicación. Las recomendaciones serán de carácter general. Por favor, indíqueme su nombre completo para continuar.');
       }
       setStage('initial');
       return;
@@ -127,9 +127,9 @@ function ChatInterface() {
 
     if (reply.toLowerCase().includes('sí') || reply.toLowerCase().includes('mostrar')) {
       setShowHospitals(true);
-      addAIResponse('Aquí tienes algunos hospitales cercanos:');
+      addAIResponse('A continuación, encontrará los centros médicos disponibles en su área:');
     } else {
-      addAIResponse('Gracias por usar VitalCol. ¡Cuídate y esperamos que te mejores pronto!');
+      addAIResponse('Gracias por utilizar VitalCol. Le deseamos una pronta recuperación y quedamos a su disposición para futuras consultas.');
     }
   };
 
@@ -141,7 +141,7 @@ function ChatInterface() {
     if (stage === 'initial') {
       setStage('symptoms');
       addAIResponsesSequentially([
-        `Gracias ${inputValue}. Por favor, selecciona tus síntomas principales:`
+        `Estimado/a ${inputValue}, es un placer atenderle. Para brindarle una evaluación médica preliminar adecuada, por favor seleccione los síntomas que presenta actualmente:`
       ]);
       setTimeout(() => {
         setIsAITyping(true);
@@ -159,24 +159,24 @@ function ChatInterface() {
     setShowSymptomSelector(false);
     
     const symptomsText = symptoms.join(', ');
-    addUserMessage(`Mis síntomas son: ${symptomsText}`);
+    addUserMessage(`Los síntomas que presento son: ${symptomsText}`);
     
     const { severity, recommendation } = getRecommendation(symptoms);
     setSeverity(severity);
     
-    addAIResponse(`Basado en tus síntomas, tu situación parece ser de gravedad ${
-      severity === 'mild' ? 'LEVE' : severity === 'moderate' ? 'MODERADA' : 'GRAVE'
+    addAIResponse(`Basándome en la evaluación de sus síntomas, su condición médica se clasifica como de gravedad ${
+      severity === 'mild' ? 'LEVE' : severity === 'moderate' ? 'MODERADA' : 'ALTA'
     }.`);
     
     setTimeout(() => {
       addAIResponsesSequentially([
         recommendation,
-        '¿Te gustaría ver los hospitales cercanos a tu ubicación?'
+        '¿Desea que le proporcione información sobre centros médicos cercanos a su ubicación?'
       ]);
       setStage('recommendation');
 
       setTimeout(() => {
-        setQuickReplies(['Sí, mostrar hospitales', 'No, gracias']);
+        setQuickReplies(['Sí, mostrar centros médicos', 'No, gracias']);
         setShowQuickReplies(true);
       }, 1000);
     }, 1500);
@@ -186,7 +186,7 @@ function ChatInterface() {
     setSelectedEPS(selectedEPSName);
     setShowEPSSelector(false);
     setShowEPSFacilities(true);
-    addAIResponse(`Perfecto. Mostrando centros médicos afiliados a ${selectedEPSName} cerca de tu ubicación.`);
+    addAIResponse(`Excelente elección. Procesando búsqueda de centros médicos afiliados a ${selectedEPSName} en su área geográfica.`);
   };
 
   return (
@@ -230,7 +230,7 @@ function ChatInterface() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Escribe un mensaje..."
+              placeholder="Escriba su mensaje aquí..."
               className="flex-1 rounded-full border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={showQuickReplies || isAITyping}
             />
