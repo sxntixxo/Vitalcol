@@ -101,34 +101,133 @@ Responde de manera útil y profesional.`;
   }
 };
 
-// Respuestas de respaldo cuando la API no está disponible
+// Respuestas de respaldo específicas para síntomas médicos
 const getFallbackResponse = (userMessage: string, context: string): string => {
   const message = userMessage.toLowerCase();
   
-  // Respuestas contextuales basadas en el contexto
-  if (context.includes('symptoms') || context.includes('síntomas')) {
+  // Para recomendaciones médicas específicas
+  if (context.includes('medical_recommendation')) {
     if (message.includes('fiebre') || message.includes('temperatura')) {
-      return 'Para la fiebre, es importante mantenerse hidratado, descansar y monitorear la temperatura. Si supera los 38.5°C o persiste por más de 3 días, te recomiendo consultar con un médico.';
+      return `**Recomendación para fiebre:**
+
+🌡️ **Cuidados inmediatos:**
+• Mantente hidratado bebiendo abundante agua
+• Descansa en un lugar fresco y ventilado
+• Usa ropa ligera y cómoda
+• Aplica compresas tibias en frente y muñecas
+
+⚠️ **Cuándo buscar atención médica:**
+• Si la fiebre supera los 39°C
+• Si persiste por más de 3 días
+• Si se acompaña de dificultad para respirar
+• Si hay signos de deshidratación
+
+💊 **Medidas adicionales:**
+• Puedes tomar acetaminofén según indicaciones del empaque
+• Evita el ácido acetilsalicílico en menores de 18 años
+• Monitorea tu temperatura cada 4-6 horas
+
+Es importante que consultes con un profesional médico para una evaluación completa.`;
     }
     
     if (message.includes('dolor de cabeza') || message.includes('cefalea')) {
-      return 'Para el dolor de cabeza, intenta descansar en un lugar tranquilo y oscuro, mantente hidratado y evita el estrés. Si el dolor es intenso o frecuente, es recomendable consultar con un profesional de la salud.';
+      return `**Recomendación para dolor de cabeza:**
+
+🧠 **Cuidados inmediatos:**
+• Descansa en un lugar tranquilo y oscuro
+• Aplica compresas frías en la frente
+• Mantente hidratado
+• Evita ruidos fuertes y luces brillantes
+
+⚠️ **Cuándo buscar atención médica:**
+• Si el dolor es súbito e intenso
+• Si se acompaña de fiebre alta
+• Si hay cambios en la visión
+• Si persiste por más de 48 horas
+
+💊 **Medidas adicionales:**
+• Puedes tomar analgésicos de venta libre
+• Practica técnicas de relajación
+• Mantén horarios regulares de sueño
+• Evita el estrés y la tensión
+
+Te recomiendo consultar con un médico si los episodios son frecuentes.`;
     }
     
     if (message.includes('tos') || message.includes('gripe')) {
-      return 'Para la tos y síntomas gripales, es importante descansar, mantenerse hidratado y evitar cambios bruscos de temperatura. Si los síntomas persisten o empeoran, consulta con un médico.';
+      return `**Recomendación para tos y síntomas gripales:**
+
+🤧 **Cuidados inmediatos:**
+• Descansa y evita esfuerzos físicos
+• Mantente hidratado con líquidos tibios
+• Usa miel para calmar la garganta
+• Humidifica el ambiente
+
+⚠️ **Cuándo buscar atención médica:**
+• Si hay dificultad para respirar
+• Si la tos persiste por más de 2 semanas
+• Si hay sangre en el esputo
+• Si se acompaña de fiebre alta
+
+💊 **Medidas adicionales:**
+• Evita irritantes como humo y polvo
+• Duerme con la cabeza elevada
+• Considera jarabes naturales con miel
+• Mantén buena higiene de manos
+
+Es importante que un médico evalúe tus síntomas para descartar complicaciones.`;
     }
     
     if (message.includes('dolor abdominal') || message.includes('estómago')) {
-      return 'Para el dolor abdominal, evita alimentos irritantes, mantente hidratado y descansa. Si el dolor es intenso, persistente o se acompaña de fiebre, busca atención médica.';
+      return `**Recomendación para dolor abdominal:**
+
+🍽️ **Cuidados inmediatos:**
+• Evita alimentos sólidos temporalmente
+• Mantente hidratado con pequeños sorbos de agua
+• Aplica calor suave en el abdomen
+• Descansa en posición cómoda
+
+⚠️ **Cuándo buscar atención médica INMEDIATA:**
+• Si el dolor es intenso y súbito
+• Si se acompaña de vómito persistente
+• Si hay fiebre alta
+• Si hay sangre en vómito o heces
+
+💊 **Medidas adicionales:**
+• Evita medicamentos sin prescripción médica
+• No apliques calor si sospechas apendicitis
+• Mantén un registro de los síntomas
+• Evita alimentos irritantes
+
+El dolor abdominal puede tener múltiples causas. Es fundamental que consultes con un médico.`;
     }
     
     if (message.includes('dificultad para respirar') || message.includes('respirar')) {
-      return 'La dificultad para respirar puede ser seria. Te recomiendo buscar atención médica inmediata. Mientras tanto, mantente calmado y en posición erguida.';
+      return `**⚠️ ATENCIÓN MÉDICA INMEDIATA REQUERIDA ⚠️**
+
+🚨 **Cuidados inmediatos:**
+• Mantente calmado y en posición erguida
+• Afloja ropa ajustada
+• Busca aire fresco
+• Respira lenta y profundamente
+
+🏥 **BUSCA ATENCIÓN MÉDICA INMEDIATA:**
+• La dificultad para respirar puede ser grave
+• Llama al 123 si es severa
+• Dirígete al hospital más cercano
+• No conduzcas, pide ayuda
+
+💊 **Mientras esperas ayuda:**
+• Evita esfuerzos físicos
+• No te acuestes completamente
+• Si tienes inhalador prescrito, úsalo
+• Mantén a alguien contigo
+
+La dificultad respiratoria requiere evaluación médica urgente. No demores en buscar ayuda profesional.`;
     }
   }
   
-  // Respuestas generales
+  // Respuestas generales para otros contextos
   if (context.includes('greeting') || context.includes('saludo')) {
     return 'Hola, estoy aquí para ayudarte con orientación médica general. ¿En qué puedo asistirte hoy?';
   }
@@ -137,8 +236,8 @@ const getFallbackResponse = (userMessage: string, context: string): string => {
     return 'Perfecto. Con tu ubicación podré recomendarte centros médicos cercanos y adecuados para tus necesidades.';
   }
   
-  // Respuesta por defecto
-  return 'Entiendo tu consulta. Te recomiendo mantener un estilo de vida saludable y consultar con un profesional médico para una evaluación más detallada de tu situación.';
+  // Respuesta por defecto solo para casos no médicos
+  return 'Entiendo tu consulta. ¿Podrías proporcionar más detalles sobre tus síntomas para poder ayudarte mejor?';
 };
 
 // Función específica para generar recomendaciones médicas inteligentes
@@ -156,7 +255,7 @@ export const generateMedicalRecommendation = async (
 
 La gravedad estimada es ${severityText}.
 
-Como asistente médico virtual, proporciona una recomendación médica completa y profesional que incluya:
+Como asistente médico virtual especializado, proporciona una recomendación médica completa y profesional que incluya:
 
 1. **Evaluación inicial**: Breve explicación de lo que podrían indicar estos síntomas
 2. **Cuidados inmediatos**: Qué puede hacer ahora mismo para aliviar los síntomas
@@ -164,11 +263,17 @@ Como asistente médico virtual, proporciona una recomendación médica completa 
 4. **Medidas preventivas**: Cómo evitar que empeore la situación
 5. **Recomendaciones generales**: Estilo de vida y cuidados adicionales
 
-Personaliza la respuesta usando el nombre del usuario cuando sea apropiado. Mantén un tono empático pero profesional. La respuesta debe ser informativa pero no debe reemplazar el consejo médico profesional.`;
+IMPORTANTE: 
+- Usa emojis para hacer la información más clara y fácil de leer
+- Estructura la respuesta con títulos y viñetas
+- Personaliza usando el nombre del usuario cuando sea apropiado
+- Mantén un tono empático pero profesional
+- La respuesta debe ser informativa pero no debe reemplazar el consejo médico profesional
+- Enfatiza cuándo es necesario buscar atención médica profesional`;
 
   return await generateAIResponse(prompt, context, {
     temperature: 0.6,
-    maxTokens: 400,
+    maxTokens: 500,
     model: 'openai/gpt-4-turbo-preview'
   });
 };
