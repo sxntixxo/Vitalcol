@@ -138,14 +138,14 @@ function ChatInterface() {
         try {
           const location = await handleLocationPermission();
           setUserLocation(location);
-          // MENSAJE ELIMINADO - Ya no aparece ningún mensaje aquí
+          await addAIResponse('¡Perfecto! Ahora, para brindarte un asistente más personalizado, ¿cuál es tu nombre?', 1000, true, 'name_request_with_location');
         } catch (error) {
           setUserLocation(null);
-          // MENSAJE ELIMINADO - Ya no aparece ningún mensaje aquí
+          await addAIResponse('Entiendo. Para brindarte un asistente más personalizado, ¿cuál es tu nombre?', 1000, true, 'name_request_without_location');
         }
       } else {
         setUserLocation(null);
-        // MENSAJE ELIMINADO - Ya no aparece ningún mensaje aquí
+        await addAIResponse('Entiendo. Para brindarte un asistente más personalizado, ¿cuál es tu nombre?', 1000, true, 'name_request_without_location');
       }
       setStage('initial');
       return;
