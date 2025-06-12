@@ -3,13 +3,11 @@ import { Send } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import QuickReplyButtons from './QuickReplyButtons';
 import HospitalsSection from './HospitalsSection';
-import SymptomSelector from './SymptomSelector';
 import AITypingIndicator from './AITypingIndicator';
 import EPSSelector from './EPSSelector';
 import EPSFacilitiesDisplay from './EPSFacilitiesDisplay';
 import { Message, TriageStage, SeverityLevel, UserLocation } from '../api/types';
-import { getRecommendation } from '../utils/triageLogic';
-import { generateMedicalRecommendation, generateConversationalResponse } from '../utils/openRouterAI';
+import { generateConversationalResponse } from '../utils/openRouterAI';
 
 function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
@@ -21,7 +19,6 @@ function ChatInterface() {
   const [showQuickReplies, setShowQuickReplies] = useState(true);
   const [quickReplies, setQuickReplies] = useState<string[]>(['Sí, permitir acceso', 'No, gracias']);
   const [showHospitals, setShowHospitals] = useState(false);
-  const [showSymptomSelector, setShowSymptomSelector] = useState(false);
   const [isAITyping, setIsAITyping] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [selectedEPS, setSelectedEPS] = useState<string | null>(null);
@@ -167,75 +164,15 @@ function ChatInterface() {
     
     if (stage === 'initial') {
       setUserName(currentInput);
-      setStage('symptoms');
       
       const welcomeMessage = `Hola ${currentInput}, estoy aquí para ayudarte con orientación médica general. ¿En qué puedo asistirte hoy?`;
       await addAIResponse(welcomeMessage, 1000, false, `greeting_with_name, user_name: ${currentInput}`);
-      
-      setTimeout(() => {
-        setIsAITyping(true);
-        setTimeout(() => {
-          setShowSymptomSelector(true);
-          setIsAITyping(false);
-        }, 1000);
-      }, 1000);
     } else {
       // Respuesta conversacional general usando IA
       await addAIResponse(currentInput, 1000, true, 'general_conversation');
     }
     
     setInputValue('');
-  };
-
-  const handleSymptomSubmit = async (symptoms: string[]) => {
-    setShowSymptomSelector(false);
-    
-    const symptomsText = symptoms.join(', ');
-    addUserMessage(`Mis síntomas son: ${symptomsText}`);
-    
-    const { severity: detectedSeverity } = getRecommendation(symptoms);
-    setSeverity(detectedSeverity);
-    
-    // Generar respuesta de gravedad usando IA con el nombre del usuario
-    const severityMessage = `${userName}, basado en tus síntomas, tu situación parece ser de gravedad ${
-      detectedSeverity === 'mild' ? 'LEVE' : detectedSeverity === 'moderate' ? 'MODERADA' : 'GRAVE'
-    }.`;
-    
-    await addAIResponse(severityMessage, 1000, true, `severity_assessment: ${detectedSeverity}, user_name: ${userName}`);
-    
-    // Generar recomendación médica usando IA
-    setTimeout(async () => {
-      try {
-        const aiRecommendation = await generateMedicalRecommendation(symptoms, detectedSeverity, userName);
-        
-        await addAIResponsesSequentially([
-          aiRecommendation,
-          '¿Te gustaría ver los centros médicos cercanos a tu ubicación?'
-        ], 1500);
-        
-        setStage('recommendation');
-
-        setTimeout(() => {
-          setQuickReplies(['Sí, mostrar centros médicos', 'No, gracias']);
-          setShowQuickReplies(true);
-        }, 3000);
-      } catch (error) {
-        console.error('Error generating medical recommendation:', error);
-        // Fallback a la lógica original
-        const { recommendation } = getRecommendation(symptoms);
-        await addAIResponsesSequentially([
-          recommendation,
-          '¿Te gustaría ver los centros médicos cercanos a tu ubicación?'
-        ], 1500);
-        
-        setStage('recommendation');
-
-        setTimeout(() => {
-          setQuickReplies(['Sí, mostrar centros médicos', 'No, gracias']);
-          setShowQuickReplies(true);
-        }, 3000);
-      }
-    }, 1500);
   };
 
   const handleEPSSelect = async (selectedEPSName: string) => {
@@ -257,9 +194,6 @@ function ChatInterface() {
               <ChatMessage key={index} message={message} />
             ))}
             {isAITyping && <AITypingIndicator />}
-            {showSymptomSelector && (
-              <SymptomSelector onSubmit={handleSymptomSubmit} />
-            )}
             {showQuickReplies && (
               <QuickReplyButtons
                 replies={quickReplies}
