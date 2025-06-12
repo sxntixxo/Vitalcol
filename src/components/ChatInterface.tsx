@@ -251,11 +251,22 @@ function ChatInterface() {
           
         } catch (error) {
           console.error('Error generating medical recommendation:', error);
-          // Fallback a recomendación básica
+          // Fallback a recomendación básica sin el mensaje genérico
           setTimeout(() => {
             setIsAITyping(false);
             const fallbackMessage = `${userName}, basándome en los síntomas que mencionas (${detectedSymptoms.join(', ')}), te recomiendo descansar, mantenerte hidratado y monitorear tus síntomas. Si empeoran o persisten, consulta con un profesional médico.`;
             setMessages((prev) => [...prev, { sender: 'ai', content: fallbackMessage }]);
+            
+            // Después del fallback, también preguntar por centros médicos
+            setTimeout(() => {
+              setMessages((prev) => [...prev, { 
+                sender: 'ai', 
+                content: '¿Te gustaría que te muestre centros médicos cercanos donde puedas recibir atención?' 
+              }]);
+              setQuickReplies(['Sí, mostrar centros médicos', 'No, gracias']);
+              setShowQuickReplies(true);
+              setStage('recommendation');
+            }, 1500);
           }, 2000);
         }
       } else {
