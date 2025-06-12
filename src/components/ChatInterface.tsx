@@ -169,8 +169,8 @@ function ChatInterface() {
       setUserName(currentInput);
       setStage('symptoms');
       
-      const welcomeMessage = `¡Mucho gusto, ${currentInput}! Ahora que nos conocemos, por favor selecciona tus síntomas principales para poder ayudarte mejor:`;
-      await addAIResponse(welcomeMessage, 1000, true, `greeting_with_name, user_name: ${currentInput}`);
+      const welcomeMessage = `Hola ${currentInput}, estoy aquí para ayudarte con orientación médica general. ¿En qué puedo asistirte hoy?`;
+      await addAIResponse(welcomeMessage, 1000, false, `greeting_with_name, user_name: ${currentInput}`);
       
       setTimeout(() => {
         setIsAITyping(true);
