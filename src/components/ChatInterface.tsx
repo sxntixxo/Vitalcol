@@ -218,7 +218,7 @@ function ChatInterface() {
       const detectedSymptoms = detectMedicalSymptoms(currentInput);
       
       if (detectedSymptoms.length > 0) {
-        // Se detectaron síntomas médicos - generar recomendación con IA
+        // Se detectaron síntomas médicos - generar SOLO la recomendación con IA
         const detectedSeverity = analyzeSeverity(detectedSymptoms, currentInput);
         setSeverity(detectedSeverity);
         
@@ -234,6 +234,7 @@ function ChatInterface() {
           
           setTimeout(() => {
             setIsAITyping(false);
+            // SOLO mostrar la recomendación de la IA, sin mensaje adicional
             setMessages((prev) => [...prev, { sender: 'ai', content: aiRecommendation }]);
             
             // Después de la recomendación, preguntar si quiere ver centros médicos
@@ -253,7 +254,7 @@ function ChatInterface() {
           // Fallback a recomendación básica
           setTimeout(() => {
             setIsAITyping(false);
-            const fallbackMessage = `${userName}, entiendo que tienes ${detectedSymptoms.join(', ')}. Te recomiendo descansar, mantenerte hidratado y monitorear tus síntomas. Si empeoran o persisten, consulta con un profesional médico.`;
+            const fallbackMessage = `${userName}, basándome en los síntomas que mencionas (${detectedSymptoms.join(', ')}), te recomiendo descansar, mantenerte hidratado y monitorear tus síntomas. Si empeoran o persisten, consulta con un profesional médico.`;
             setMessages((prev) => [...prev, { sender: 'ai', content: fallbackMessage }]);
           }, 2000);
         }
