@@ -138,14 +138,15 @@ function ChatInterface() {
         try {
           const location = await handleLocationPermission();
           setUserLocation(location);
-          await addAIResponse('Perfecto. Gracias por permitir el acceso a tu ubicación. ¿Cuál es tu nombre para tener un asistente más personalizado?', 1000, true, 'location_granted');
+          // Cambio aquí: Preguntar directamente por el nombre
+          await addAIResponse('¡Perfecto! Gracias por permitir el acceso a tu ubicación. Ahora, ¿cuál es tu nombre para tener un asistente más personalizado?', 1000, true, 'location_granted_ask_name');
         } catch (error) {
           setUserLocation(null);
-          await addAIResponse('No pude acceder a tu ubicación. Continuaremos sin personalización por ubicación. ¿Cuál es tu nombre para tener un asistente más personalizado?', 1000, true, 'location_denied');
+          await addAIResponse('No pude acceder a tu ubicación, pero no te preocupes. ¿Cuál es tu nombre para tener un asistente más personalizado?', 1000, true, 'location_denied_ask_name');
         }
       } else {
         setUserLocation(null);
-        await addAIResponse('Entiendo. Continuaremos sin personalización por ubicación. ¿Cuál es tu nombre para tener un asistente más personalizado?', 1000, true, 'location_declined');
+        await addAIResponse('Entiendo. Continuaremos sin personalización por ubicación. ¿Cuál es tu nombre para tener un asistente más personalizado?', 1000, true, 'location_declined_ask_name');
       }
       setStage('initial');
       return;
@@ -169,8 +170,8 @@ function ChatInterface() {
       setUserName(currentInput);
       setStage('symptoms');
       
-      const welcomeMessage = `Gracias ${currentInput}. Por favor, selecciona tus síntomas principales:`;
-      await addAIResponse(welcomeMessage, 1000, true, `greeting, user_name: ${currentInput}`);
+      const welcomeMessage = `¡Mucho gusto, ${currentInput}! Ahora que nos conocemos, por favor selecciona tus síntomas principales para poder ayudarte mejor:`;
+      await addAIResponse(welcomeMessage, 1000, true, `greeting_with_name, user_name: ${currentInput}`);
       
       setTimeout(() => {
         setIsAITyping(true);
@@ -196,12 +197,12 @@ function ChatInterface() {
     const { severity: detectedSeverity } = getRecommendation(symptoms);
     setSeverity(detectedSeverity);
     
-    // Generar respuesta de gravedad usando IA
-    const severityMessage = `Basado en tus síntomas, tu situación parece ser de gravedad ${
+    // Generar respuesta de gravedad usando IA con el nombre del usuario
+    const severityMessage = `${userName}, basado en tus síntomas, tu situación parece ser de gravedad ${
       detectedSeverity === 'mild' ? 'LEVE' : detectedSeverity === 'moderate' ? 'MODERADA' : 'GRAVE'
     }.`;
     
-    await addAIResponse(severityMessage, 1000, true, `severity_assessment: ${detectedSeverity}`);
+    await addAIResponse(severityMessage, 1000, true, `severity_assessment: ${detectedSeverity}, user_name: ${userName}`);
     
     // Generar recomendación médica usando IA
     setTimeout(async () => {
@@ -242,7 +243,10 @@ function ChatInterface() {
     setSelectedEPS(selectedEPSName);
     setShowEPSSelector(false);
     setShowEPSFacilities(true);
-    await addAIResponse(`Perfecto. Mostrando centros médicos afiliados a ${selectedEPSName} cerca de tu ubicación.`, 1000, true, `eps_selected: ${selectedEPSName}`);
+    const personalizedMessage = userName 
+      ? `Perfecto, ${userName}. Mostrando centros médicos afiliados a ${selectedEPSName} cerca de tu ubicación.`
+      : `Perfecto. Mostrando centros médicos afiliados a ${selectedEPSName} cerca de tu ubicación.`;
+    await addAIResponse(personalizedMessage, 1000, true, `eps_selected: ${selectedEPSName}, user_name: ${userName}`);
   };
 
   return (
@@ -286,7 +290,7 @@ function ChatInterface() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Escribe un mensaje..."
+              placeholder={stage === 'initial' ? "Escribe tu nombre..." : "Escribe un mensaje..."}
               className="flex-1 rounded-full border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={showQuickReplies || isAITyping}
             />
