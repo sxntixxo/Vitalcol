@@ -138,15 +138,14 @@ function ChatInterface() {
         try {
           const location = await handleLocationPermission();
           setUserLocation(location);
-          // CAMBIO AQUÍ: En lugar del mensaje sobre ubicación, preguntar por el nombre
-          await addAIResponse('¿Cuál es tu nombre para tener un asistente más personalizado?', 1000, true, 'location_granted_ask_name');
+          // MENSAJE ELIMINADO - Ya no aparece ningún mensaje aquí
         } catch (error) {
           setUserLocation(null);
-          await addAIResponse('¿Cuál es tu nombre para tener un asistente más personalizado?', 1000, true, 'location_denied_ask_name');
+          // MENSAJE ELIMINADO - Ya no aparece ningún mensaje aquí
         }
       } else {
         setUserLocation(null);
-        await addAIResponse('¿Cuál es tu nombre para tener un asistente más personalizado?', 1000, true, 'location_declined_ask_name');
+        // MENSAJE ELIMINADO - Ya no aparece ningún mensaje aquí
       }
       setStage('initial');
       return;
