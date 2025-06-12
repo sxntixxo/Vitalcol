@@ -7,7 +7,7 @@ import AITypingIndicator from './AITypingIndicator';
 import EPSSelector from './EPSSelector';
 import EPSFacilitiesDisplay from './EPSFacilitiesDisplay';
 import { Message, TriageStage, SeverityLevel, UserLocation } from '../api/types';
-import { generateConversationalResponse } from '../utils/openRouterAI';
+import { generateMedicalRecommendation, generateConversationalResponse } from '../utils/openRouterAI';
 
 function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
@@ -25,6 +25,7 @@ function ChatInterface() {
   const [showEPSSelector, setShowEPSSelector] = useState(false);
   const [showEPSFacilities, setShowEPSFacilities] = useState(false);
   const [userName, setUserName] = useState<string>('');
+  const [conversationStage, setConversationStage] = useState<'waiting_name' | 'active_conversation'>('waiting_name');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -52,34 +53,6 @@ function ChatInterface() {
     }, delay);
   };
 
-  const addAIResponsesSequentially = async (contents: string[], delay: number = 1000, useAI: boolean = false) => {
-    let accumulatedDelay = 0;
-    setIsAITyping(true);
-
-    for (let i = 0; i < contents.length; i++) {
-      const content = contents[i];
-      accumulatedDelay += delay;
-      
-      let responseContent = content;
-      
-      if (useAI) {
-        try {
-          responseContent = await generateConversationalResponse(content, 'conversation', userName);
-        } catch (error) {
-          console.error('Error generating AI response:', error);
-        }
-      }
-      
-      setTimeout(() => {
-        setMessages((prev) => [...prev, { sender: 'ai', content: responseContent }]);
-
-        if (i === contents.length - 1) {
-          setIsAITyping(false);
-        }
-      }, accumulatedDelay);
-    }
-  };
-
   const addUserMessage = (content: string) => {
     setMessages((prev) => [...prev, { sender: 'user', content }]);
   };
@@ -103,6 +76,77 @@ function ChatInterface() {
         }
       );
     });
+  };
+
+  const detectMedicalSymptoms = (message: string): string[] => {
+    const symptoms: string[] = [];
+    const lowerMessage = message.toLowerCase();
+    
+    // Diccionario de síntomas comunes
+    const symptomKeywords = {
+      'dolor de cabeza': ['dolor de cabeza', 'cefalea', 'migraña', 'jaqueca'],
+      'fiebre': ['fiebre', 'temperatura', 'calentura', 'febril'],
+      'tos': ['tos', 'tosiendo', 'toser'],
+      'dolor abdominal': ['dolor de estómago', 'dolor abdominal', 'dolor de barriga', 'dolor en el abdomen'],
+      'dificultad para respirar': ['dificultad para respirar', 'falta de aire', 'ahogo', 'disnea'],
+      'náuseas': ['náuseas', 'ganas de vomitar', 'mareo'],
+      'mareos': ['mareos', 'vértigo', 'mareado'],
+      'dolor muscular': ['dolor muscular', 'dolor en los músculos', 'mialgia'],
+      'fatiga': ['fatiga', 'cansancio', 'agotamiento', 'debilidad'],
+      'dolor de garganta': ['dolor de garganta', 'garganta irritada', 'faringitis'],
+      'congestión nasal': ['congestión nasal', 'nariz tapada', 'rinitis'],
+      'diarrea': ['diarrea', 'deposiciones líquidas'],
+      'vómitos': ['vómitos', 'vomitar', 'vómito'],
+      'dolor en el pecho': ['dolor en el pecho', 'dolor torácico', 'opresión en el pecho']
+    };
+
+    // Buscar síntomas en el mensaje
+    for (const [symptom, keywords] of Object.entries(symptomKeywords)) {
+      for (const keyword of keywords) {
+        if (lowerMessage.includes(keyword)) {
+          symptoms.push(symptom);
+          break; // Solo agregar el síntoma una vez
+        }
+      }
+    }
+
+    return symptoms;
+  };
+
+  const analyzeSeverity = (symptoms: string[], message: string): SeverityLevel => {
+    const lowerMessage = message.toLowerCase();
+    
+    // Palabras que indican gravedad
+    const severeIndicators = [
+      'intenso', 'fuerte', 'insoportable', 'severo', 'grave', 'agudo',
+      'no puedo', 'muy mal', 'terrible', 'horrible', 'desesperante'
+    ];
+    
+    const moderateIndicators = [
+      'molesto', 'persistente', 'constante', 'regular', 'moderado'
+    ];
+
+    // Síntomas que por sí solos indican gravedad
+    const severeSymptoms = [
+      'dificultad para respirar',
+      'dolor en el pecho'
+    ];
+
+    // Verificar síntomas graves
+    if (symptoms.some(symptom => severeSymptoms.includes(symptom))) {
+      return 'severe';
+    }
+
+    // Verificar indicadores de gravedad en el mensaje
+    if (severeIndicators.some(indicator => lowerMessage.includes(indicator))) {
+      return 'severe';
+    }
+
+    if (moderateIndicators.some(indicator => lowerMessage.includes(indicator))) {
+      return 'moderate';
+    }
+
+    return 'mild';
   };
 
   const handleQuickReply = async (reply: string) => {
@@ -162,14 +206,61 @@ function ChatInterface() {
     addUserMessage(inputValue);
     const currentInput = inputValue;
     
-    if (stage === 'initial') {
+    if (stage === 'initial' && conversationStage === 'waiting_name') {
+      // Usuario está escribiendo su nombre
       setUserName(currentInput);
+      setConversationStage('active_conversation');
       
       const welcomeMessage = `Hola ${currentInput}, estoy aquí para ayudarte con orientación médica general. ¿En qué puedo asistirte hoy?`;
       await addAIResponse(welcomeMessage, 1000, false, `greeting_with_name, user_name: ${currentInput}`);
-    } else {
-      // Respuesta conversacional general usando IA
-      await addAIResponse(currentInput, 1000, true, 'general_conversation');
+    } else if (conversationStage === 'active_conversation') {
+      // Usuario está en conversación activa - detectar síntomas médicos
+      const detectedSymptoms = detectMedicalSymptoms(currentInput);
+      
+      if (detectedSymptoms.length > 0) {
+        // Se detectaron síntomas médicos - generar recomendación con IA
+        const detectedSeverity = analyzeSeverity(detectedSymptoms, currentInput);
+        setSeverity(detectedSeverity);
+        
+        setIsAITyping(true);
+        
+        try {
+          // Generar recomendación médica inteligente usando IA
+          const aiRecommendation = await generateMedicalRecommendation(
+            detectedSymptoms, 
+            detectedSeverity, 
+            userName
+          );
+          
+          setTimeout(() => {
+            setIsAITyping(false);
+            setMessages((prev) => [...prev, { sender: 'ai', content: aiRecommendation }]);
+            
+            // Después de la recomendación, preguntar si quiere ver centros médicos
+            setTimeout(() => {
+              setMessages((prev) => [...prev, { 
+                sender: 'ai', 
+                content: '¿Te gustaría que te muestre centros médicos cercanos donde puedas recibir atención?' 
+              }]);
+              setQuickReplies(['Sí, mostrar centros médicos', 'No, gracias']);
+              setShowQuickReplies(true);
+              setStage('recommendation');
+            }, 1500);
+          }, 2000);
+          
+        } catch (error) {
+          console.error('Error generating medical recommendation:', error);
+          // Fallback a recomendación básica
+          setTimeout(() => {
+            setIsAITyping(false);
+            const fallbackMessage = `${userName}, entiendo que tienes ${detectedSymptoms.join(', ')}. Te recomiendo descansar, mantenerte hidratado y monitorear tus síntomas. Si empeoran o persisten, consulta con un profesional médico.`;
+            setMessages((prev) => [...prev, { sender: 'ai', content: fallbackMessage }]);
+          }, 2000);
+        }
+      } else {
+        // No se detectaron síntomas - respuesta conversacional general
+        await addAIResponse(currentInput, 1000, true, 'general_conversation');
+      }
     }
     
     setInputValue('');
@@ -223,7 +314,11 @@ function ChatInterface() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={stage === 'initial' ? "Escribe tu nombre..." : "Escribe un mensaje..."}
+              placeholder={
+                conversationStage === 'waiting_name' 
+                  ? "Escribe tu nombre..." 
+                  : "Describe tus síntomas o haz una consulta médica..."
+              }
               className="flex-1 rounded-full border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={showQuickReplies || isAITyping}
             />

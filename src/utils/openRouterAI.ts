@@ -141,7 +141,7 @@ const getFallbackResponse = (userMessage: string, context: string): string => {
   return 'Entiendo tu consulta. Te recomiendo mantener un estilo de vida saludable y consultar con un profesional médico para una evaluación más detallada de tu situación.';
 };
 
-// Función específica para generar recomendaciones médicas
+// Función específica para generar recomendaciones médicas inteligentes
 export const generateMedicalRecommendation = async (
   symptoms: string[],
   severity: 'mild' | 'moderate' | 'severe',
@@ -150,23 +150,25 @@ export const generateMedicalRecommendation = async (
   const symptomsText = symptoms.join(', ');
   const severityText = severity === 'mild' ? 'leve' : severity === 'moderate' ? 'moderada' : 'grave';
   
-  const context = `symptoms, severity: ${severityText}, user_name: ${userName || 'usuario'}`;
-  const userGreeting = userName ? `${userName}, ` : '';
+  const context = `medical_recommendation, symptoms: ${symptomsText}, severity: ${severityText}, user_name: ${userName || 'usuario'}`;
   
-  const prompt = `${userGreeting}presentas los siguientes síntomas: ${symptomsText}. 
-  
-La gravedad estimada es ${severityText}. 
+  const prompt = `El usuario ${userName || ''} presenta los siguientes síntomas: ${symptomsText}.
 
-Por favor, proporciona una recomendación médica general apropiada, incluyendo:
-1. Cuidados inmediatos recomendados
-2. Cuándo buscar atención médica
-3. Medidas preventivas si aplica
+La gravedad estimada es ${severityText}.
 
-Mantén la respuesta concisa pero informativa y personalizada.`;
+Como asistente médico virtual, proporciona una recomendación médica completa y profesional que incluya:
+
+1. **Evaluación inicial**: Breve explicación de lo que podrían indicar estos síntomas
+2. **Cuidados inmediatos**: Qué puede hacer ahora mismo para aliviar los síntomas
+3. **Cuándo buscar atención médica**: Señales de alarma y cuándo acudir al médico
+4. **Medidas preventivas**: Cómo evitar que empeore la situación
+5. **Recomendaciones generales**: Estilo de vida y cuidados adicionales
+
+Personaliza la respuesta usando el nombre del usuario cuando sea apropiado. Mantén un tono empático pero profesional. La respuesta debe ser informativa pero no debe reemplazar el consejo médico profesional.`;
 
   return await generateAIResponse(prompt, context, {
     temperature: 0.6,
-    maxTokens: 250,
+    maxTokens: 400,
     model: 'openai/gpt-4-turbo-preview'
   });
 };
