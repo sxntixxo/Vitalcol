@@ -9,6 +9,7 @@ import EPSSelector from './EPSSelector';
 import EPSFacilitiesDisplay from './EPSFacilitiesDisplay';
 import { Message, TriageStage, SeverityLevel, UserLocation } from '../api/types';
 import { getRecommendation } from '../utils/triageLogic';
+import { generateMedicalRecommendation, generateConversationalResponse } from '../utils/openRouterAI';
 
 function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
@@ -26,6 +27,7 @@ function ChatInterface() {
   const [selectedEPS, setSelectedEPS] = useState<string | null>(null);
   const [showEPSSelector, setShowEPSSelector] = useState(false);
   const [showEPSFacilities, setShowEPSFacilities] = useState(false);
+  const [userName, setUserName] = useState<string>('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -33,28 +35,52 @@ function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isAITyping]);
 
-  const addAIResponse = (content: string, delay: number = 1000) => {
+  const addAIResponse = async (content: string, delay: number = 1000, useAI: boolean = false, context: string = '') => {
     setIsAITyping(true);
+    
+    let responseContent = content;
+    
+    if (useAI) {
+      try {
+        responseContent = await generateConversationalResponse(content, context);
+      } catch (error) {
+        console.error('Error generating AI response:', error);
+        // Usar el contenido original como fallback
+      }
+    }
+    
     setTimeout(() => {
       setIsAITyping(false);
-      setMessages((prev) => [...prev, { sender: 'ai', content }]);
+      setMessages((prev) => [...prev, { sender: 'ai', content: responseContent }]);
     }, delay);
   };
 
-  const addAIResponsesSequentially = (contents: string[], delay: number = 1000) => {
+  const addAIResponsesSequentially = async (contents: string[], delay: number = 1000, useAI: boolean = false) => {
     let accumulatedDelay = 0;
     setIsAITyping(true);
 
-    contents.forEach((content, index) => {
+    for (let i = 0; i < contents.length; i++) {
+      const content = contents[i];
       accumulatedDelay += delay;
+      
+      let responseContent = content;
+      
+      if (useAI) {
+        try {
+          responseContent = await generateConversationalResponse(content, 'conversation');
+        } catch (error) {
+          console.error('Error generating AI response:', error);
+        }
+      }
+      
       setTimeout(() => {
-        setMessages((prev) => [...prev, { sender: 'ai', content }]);
+        setMessages((prev) => [...prev, { sender: 'ai', content: responseContent }]);
 
-        if (index === contents.length - 1) {
+        if (i === contents.length - 1) {
           setIsAITyping(false);
         }
       }, accumulatedDelay);
-    });
+    }
   };
 
   const addUserMessage = (content: string) => {
@@ -90,17 +116,17 @@ function ChatInterface() {
       setShowHospitals(false);
       setStage('eps_selection');
       setShowEPSSelector(true);
-      addAIResponse('Por favor, selecciona tu EPS para continuar y ver los centros médicos afiliados.');
+      await addAIResponse('Por favor, selecciona tu EPS para continuar y ver los centros médicos afiliados.', 1000, true, 'eps_selection');
       return;
     }
 
     if (stage === 'recommendation') {
       if (reply === 'Sí, mostrar centros médicos') {
         setShowHospitals(true);
-        addAIResponse('Mostrando centros médicos cercanos a tu ubicación.');
+        await addAIResponse('Mostrando centros médicos cercanos a tu ubicación.', 1000, true, 'showing_hospitals');
       } else {
         setShowHospitals(false);
-        addAIResponse('Entendido. Si necesitas más ayuda, no dudes en pedírmelo.');
+        await addAIResponse('Entendido. Si necesitas más ayuda, no dudes en pedírmelo.', 1000, true, 'conversation_end');
       }
       setStage('initial');
       return;
@@ -112,14 +138,14 @@ function ChatInterface() {
         try {
           const location = await handleLocationPermission();
           setUserLocation(location);
-          addAIResponse('Perfecto. Gracias por permitir el acceso a tu ubicación. ¿Cuál es tu nombre?');
+          await addAIResponse('Perfecto. Gracias por permitir el acceso a tu ubicación. ¿Cuál es tu nombre?', 1000, true, 'location_granted');
         } catch (error) {
           setUserLocation(null);
-          addAIResponse('No pude acceder a tu ubicación. Continuaremos sin personalización por ubicación. ¿Cuál es tu nombre?');
+          await addAIResponse('No pude acceder a tu ubicación. Continuaremos sin personalización por ubicación. ¿Cuál es tu nombre?', 1000, true, 'location_denied');
         }
       } else {
         setUserLocation(null);
-        addAIResponse('Entiendo. Continuaremos sin personalización por ubicación. ¿Cuál es tu nombre?');
+        await addAIResponse('Entiendo. Continuaremos sin personalización por ubicación. ¿Cuál es tu nombre?', 1000, true, 'location_declined');
       }
       setStage('initial');
       return;
@@ -127,22 +153,25 @@ function ChatInterface() {
 
     if (reply.toLowerCase().includes('sí') || reply.toLowerCase().includes('mostrar')) {
       setShowHospitals(true);
-      addAIResponse('Aquí tienes algunos centros médicos cercanos:');
+      await addAIResponse('Aquí tienes algunos centros médicos cercanos:', 1000, true, 'showing_hospitals');
     } else {
-      addAIResponse('Gracias por usar VitalCol. ¡Cuídate y esperamos que te mejores pronto!');
+      await addAIResponse('Gracias por usar VitalCol. ¡Cuídate y esperamos que te mejores pronto!', 1000, true, 'farewell');
     }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
     
     addUserMessage(inputValue);
+    const currentInput = inputValue;
     
     if (stage === 'initial') {
+      setUserName(currentInput);
       setStage('symptoms');
-      addAIResponsesSequentially([
-        `Gracias ${inputValue}. Por favor, selecciona tus síntomas principales:`
-      ]);
+      
+      const welcomeMessage = `Gracias ${currentInput}. Por favor, selecciona tus síntomas principales:`;
+      await addAIResponse(welcomeMessage, 1000, true, `greeting, user_name: ${currentInput}`);
+      
       setTimeout(() => {
         setIsAITyping(true);
         setTimeout(() => {
@@ -150,43 +179,70 @@ function ChatInterface() {
           setIsAITyping(false);
         }, 1000);
       }, 1000);
+    } else {
+      // Respuesta conversacional general usando IA
+      await addAIResponse(currentInput, 1000, true, 'general_conversation');
     }
     
     setInputValue('');
   };
 
-  const handleSymptomSubmit = (symptoms: string[]) => {
+  const handleSymptomSubmit = async (symptoms: string[]) => {
     setShowSymptomSelector(false);
     
     const symptomsText = symptoms.join(', ');
     addUserMessage(`Mis síntomas son: ${symptomsText}`);
     
-    const { severity, recommendation } = getRecommendation(symptoms);
-    setSeverity(severity);
+    const { severity: detectedSeverity } = getRecommendation(symptoms);
+    setSeverity(detectedSeverity);
     
-    addAIResponse(`Basado en tus síntomas, tu situación parece ser de gravedad ${
-      severity === 'mild' ? 'LEVE' : severity === 'moderate' ? 'MODERADA' : 'GRAVE'
-    }.`);
+    // Generar respuesta de gravedad usando IA
+    const severityMessage = `Basado en tus síntomas, tu situación parece ser de gravedad ${
+      detectedSeverity === 'mild' ? 'LEVE' : detectedSeverity === 'moderate' ? 'MODERADA' : 'GRAVE'
+    }.`;
     
-    setTimeout(() => {
-      addAIResponsesSequentially([
-        recommendation,
-        '¿Te gustaría ver los centros médicos cercanos a tu ubicación?'
-      ]);
-      setStage('recommendation');
+    await addAIResponse(severityMessage, 1000, true, `severity_assessment: ${detectedSeverity}`);
+    
+    // Generar recomendación médica usando IA
+    setTimeout(async () => {
+      try {
+        const aiRecommendation = await generateMedicalRecommendation(symptoms, detectedSeverity);
+        
+        await addAIResponsesSequentially([
+          aiRecommendation,
+          '¿Te gustaría ver los centros médicos cercanos a tu ubicación?'
+        ], 1500);
+        
+        setStage('recommendation');
 
-      setTimeout(() => {
-        setQuickReplies(['Sí, mostrar centros médicos', 'No, gracias']);
-        setShowQuickReplies(true);
-      }, 1000);
+        setTimeout(() => {
+          setQuickReplies(['Sí, mostrar centros médicos', 'No, gracias']);
+          setShowQuickReplies(true);
+        }, 3000);
+      } catch (error) {
+        console.error('Error generating medical recommendation:', error);
+        // Fallback a la lógica original
+        const { recommendation } = getRecommendation(symptoms);
+        await addAIResponsesSequentially([
+          recommendation,
+          '¿Te gustaría ver los centros médicos cercanos a tu ubicación?'
+        ], 1500);
+        
+        setStage('recommendation');
+
+        setTimeout(() => {
+          setQuickReplies(['Sí, mostrar centros médicos', 'No, gracias']);
+          setShowQuickReplies(true);
+        }, 3000);
+      }
     }, 1500);
   };
 
-  const handleEPSSelect = (selectedEPSName: string) => {
+  const handleEPSSelect = async (selectedEPSName: string) => {
     setSelectedEPS(selectedEPSName);
     setShowEPSSelector(false);
     setShowEPSFacilities(true);
-    addAIResponse(`Perfecto. Mostrando centros médicos afiliados a ${selectedEPSName} cerca de tu ubicación.`);
+    await addAIResponse(`Perfecto. Mostrando centros médicos afiliados a ${selectedEPSName} cerca de tu ubicación.`, 1000, true, `eps_selected: ${selectedEPSName}`);
   };
 
   return (
