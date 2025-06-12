@@ -42,7 +42,7 @@ function ChatInterface() {
     
     if (useAI) {
       try {
-        responseContent = await generateConversationalResponse(content, context);
+        responseContent = await generateConversationalResponse(content, context, userName);
       } catch (error) {
         console.error('Error generating AI response:', error);
         // Usar el contenido original como fallback
@@ -67,7 +67,7 @@ function ChatInterface() {
       
       if (useAI) {
         try {
-          responseContent = await generateConversationalResponse(content, 'conversation');
+          responseContent = await generateConversationalResponse(content, 'conversation', userName);
         } catch (error) {
           console.error('Error generating AI response:', error);
         }
@@ -138,14 +138,14 @@ function ChatInterface() {
         try {
           const location = await handleLocationPermission();
           setUserLocation(location);
-          await addAIResponse('Perfecto. Gracias por permitir el acceso a tu ubicación. ¿Cuál es tu nombre?', 1000, true, 'location_granted');
+          await addAIResponse('Perfecto. Gracias por permitir el acceso a tu ubicación. ¿Cuál es tu nombre para tener un asistente más personalizado?', 1000, true, 'location_granted');
         } catch (error) {
           setUserLocation(null);
-          await addAIResponse('No pude acceder a tu ubicación. Continuaremos sin personalización por ubicación. ¿Cuál es tu nombre?', 1000, true, 'location_denied');
+          await addAIResponse('No pude acceder a tu ubicación. Continuaremos sin personalización por ubicación. ¿Cuál es tu nombre para tener un asistente más personalizado?', 1000, true, 'location_denied');
         }
       } else {
         setUserLocation(null);
-        await addAIResponse('Entiendo. Continuaremos sin personalización por ubicación. ¿Cuál es tu nombre?', 1000, true, 'location_declined');
+        await addAIResponse('Entiendo. Continuaremos sin personalización por ubicación. ¿Cuál es tu nombre para tener un asistente más personalizado?', 1000, true, 'location_declined');
       }
       setStage('initial');
       return;
@@ -206,7 +206,7 @@ function ChatInterface() {
     // Generar recomendación médica usando IA
     setTimeout(async () => {
       try {
-        const aiRecommendation = await generateMedicalRecommendation(symptoms, detectedSeverity);
+        const aiRecommendation = await generateMedicalRecommendation(symptoms, detectedSeverity, userName);
         
         await addAIResponsesSequentially([
           aiRecommendation,

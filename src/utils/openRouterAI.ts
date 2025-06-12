@@ -28,7 +28,7 @@ export const generateAIResponse = async (
     const {
       temperature = 0.7,
       maxTokens = 300,
-      model = 'meta-llama/llama-3.1-8b-instruct:free'
+      model = 'openai/gpt-4-turbo-preview' // ChatGPT-4.1 en OpenRouter
     } = options;
 
     const systemPrompt = `Eres un asistente médico virtual especializado en triaje y orientación médica en Colombia. 
@@ -41,6 +41,7 @@ INSTRUCCIONES IMPORTANTES:
 - Mantén un tono cálido pero profesional
 - Si no tienes información suficiente, recomienda consultar un médico
 - Enfócate en orientación y primeros auxilios básicos
+- Usa el nombre del usuario cuando esté disponible para personalizar la experiencia
 
 CONTEXTO: ${context}
 
@@ -143,13 +144,16 @@ const getFallbackResponse = (userMessage: string, context: string): string => {
 // Función específica para generar recomendaciones médicas
 export const generateMedicalRecommendation = async (
   symptoms: string[],
-  severity: 'mild' | 'moderate' | 'severe'
+  severity: 'mild' | 'moderate' | 'severe',
+  userName?: string
 ): Promise<string> => {
   const symptomsText = symptoms.join(', ');
   const severityText = severity === 'mild' ? 'leve' : severity === 'moderate' ? 'moderada' : 'grave';
   
-  const context = `symptoms, severity: ${severityText}`;
-  const prompt = `El paciente presenta los siguientes síntomas: ${symptomsText}. 
+  const context = `symptoms, severity: ${severityText}, user_name: ${userName || 'usuario'}`;
+  const userGreeting = userName ? `${userName}, ` : '';
+  
+  const prompt = `${userGreeting}presentas los siguientes síntomas: ${symptomsText}. 
   
 La gravedad estimada es ${severityText}. 
 
@@ -158,21 +162,26 @@ Por favor, proporciona una recomendación médica general apropiada, incluyendo:
 2. Cuándo buscar atención médica
 3. Medidas preventivas si aplica
 
-Mantén la respuesta concisa pero informativa.`;
+Mantén la respuesta concisa pero informativa y personalizada.`;
 
   return await generateAIResponse(prompt, context, {
     temperature: 0.6,
-    maxTokens: 250
+    maxTokens: 250,
+    model: 'openai/gpt-4-turbo-preview'
   });
 };
 
 // Función para respuestas conversacionales generales
 export const generateConversationalResponse = async (
   userMessage: string,
-  conversationContext: string = ''
+  conversationContext: string = '',
+  userName?: string
 ): Promise<string> => {
-  return await generateAIResponse(userMessage, conversationContext, {
+  const context = userName ? `${conversationContext}, user_name: ${userName}` : conversationContext;
+  
+  return await generateAIResponse(userMessage, context, {
     temperature: 0.8,
-    maxTokens: 200
+    maxTokens: 200,
+    model: 'openai/gpt-4-turbo-preview'
   });
 };
