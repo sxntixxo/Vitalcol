@@ -269,10 +269,8 @@ function ChatInterface() {
             }, 1500);
           }, 2000);
         }
-      } else {
-        // No se detectaron síntomas - respuesta conversacional general
-        await addAIResponse(currentInput, 1000, true, 'general_conversation');
       }
+      // ELIMINADO: El else que generaba el mensaje genérico "Entiendo tu consulta..."
     }
     
     setInputValue('');
