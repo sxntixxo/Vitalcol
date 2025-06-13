@@ -246,12 +246,8 @@ Es importante que un médico evalúe tu situación para brindarte el mejor trata
     return 'Perfecto. Con tu ubicación podré recomendarte centros médicos cercanos y adecuados para tus necesidades.';
   }
 
-  if (context.includes('general_conversation')) {
-    return 'Entiendo. ¿Hay algún síntoma específico que te preocupe o alguna consulta médica que pueda ayudarte a resolver?';
-  }
-  
-  // Solo para casos muy específicos donde no hay contexto médico
-  return 'Estoy aquí para ayudarte con consultas médicas. ¿Tienes algún síntoma o pregunta de salud?';
+  // Para conversaciones generales, no usar IA
+  return 'Estoy aquí para ayudarte con consultas médicas. ¿Tienes algún síntoma específico que te preocupe?';
 };
 
 // Función específica para generar recomendaciones médicas inteligentes

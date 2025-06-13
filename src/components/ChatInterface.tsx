@@ -270,12 +270,41 @@ function ChatInterface() {
           }, 2000);
         }
       } else {
-        // No se detectaron síntomas - respuesta conversacional general
-        await addAIResponse(currentInput, 1000, true, 'general_conversation');
+        // No se detectaron síntomas - respuesta conversacional específica
+        const contextualResponse = getContextualResponse(currentInput, userName);
+        await addAIResponse(contextualResponse, 1000, false, 'general_conversation');
       }
     }
     
     setInputValue('');
+  };
+
+  // Función para generar respuestas contextuales sin usar IA
+  const getContextualResponse = (message: string, userName: string): string => {
+    const lowerMessage = message.toLowerCase();
+    
+    // Respuestas para saludos
+    if (lowerMessage.includes('hola') || lowerMessage.includes('buenos') || lowerMessage.includes('buenas')) {
+      return `Hola ${userName}, ¿en qué puedo ayudarte hoy? Puedes contarme sobre cualquier síntoma o consulta médica que tengas.`;
+    }
+    
+    // Respuestas para agradecimientos
+    if (lowerMessage.includes('gracias') || lowerMessage.includes('muchas gracias')) {
+      return `De nada, ${userName}. Estoy aquí para ayudarte con cualquier consulta médica que tengas.`;
+    }
+    
+    // Respuestas para preguntas generales de salud
+    if (lowerMessage.includes('cómo estás') || lowerMessage.includes('como estas')) {
+      return `Estoy bien, gracias por preguntar. Lo importante es cómo te sientes tú, ${userName}. ¿Hay algo específico sobre tu salud que te preocupe?`;
+    }
+    
+    // Respuestas para consultas sobre el servicio
+    if (lowerMessage.includes('qué puedes hacer') || lowerMessage.includes('que puedes hacer') || lowerMessage.includes('ayuda')) {
+      return `Puedo ayudarte con orientación médica general, evaluar síntomas y recomendarte centros médicos cercanos. ¿Tienes algún síntoma o consulta específica?`;
+    }
+    
+    // Respuesta por defecto para conversación general
+    return `${userName}, estoy aquí para ayudarte con consultas médicas. ¿Tienes algún síntoma específico que te preocupe o alguna pregunta sobre salud?`;
   };
 
   const handleEPSSelect = async (selectedEPSName: string) => {
