@@ -218,7 +218,7 @@ function ChatInterface() {
       const detectedSymptoms = detectMedicalSymptoms(currentInput);
       
       if (detectedSymptoms.length > 0) {
-        // Se detectaron síntomas médicos - generar DIRECTAMENTE la recomendación con IA
+        // Se detectaron síntomas médicos - generar recomendación con IA
         const detectedSeverity = analyzeSeverity(detectedSymptoms, currentInput);
         setSeverity(detectedSeverity);
         
@@ -234,7 +234,7 @@ function ChatInterface() {
           
           setTimeout(() => {
             setIsAITyping(false);
-            // MOSTRAR DIRECTAMENTE la recomendación de la IA
+            // Mostrar la recomendación de la IA
             setMessages((prev) => [...prev, { sender: 'ai', content: aiRecommendation }]);
             
             // Después de la recomendación, preguntar si quiere ver centros médicos
@@ -269,8 +269,10 @@ function ChatInterface() {
             }, 1500);
           }, 2000);
         }
+      } else {
+        // No se detectaron síntomas - respuesta conversacional general
+        await addAIResponse(currentInput, 1000, true, 'general_conversation');
       }
-      // ELIMINADO: El else que generaba el mensaje genérico "Entiendo tu consulta..."
     }
     
     setInputValue('');
