@@ -225,6 +225,16 @@ El dolor abdominal puede tener múltiples causas. Es fundamental que consultes c
 
 La dificultad respiratoria requiere evaluación médica urgente. No demores en buscar ayuda profesional.`;
     }
+
+    // Para síntomas no específicos, generar recomendación básica
+    return `Basándome en los síntomas que mencionas, te recomiendo:
+
+• Descansa y mantente hidratado
+• Monitorea la evolución de tus síntomas
+• Evita automedicarte sin supervisión médica
+• Consulta con un profesional médico si los síntomas persisten o empeoran
+
+Es importante que un médico evalúe tu situación para brindarte el mejor tratamiento.`;
   }
   
   // Respuestas generales para otros contextos
@@ -235,9 +245,13 @@ La dificultad respiratoria requiere evaluación médica urgente. No demores en b
   if (context.includes('location') || context.includes('ubicación')) {
     return 'Perfecto. Con tu ubicación podré recomendarte centros médicos cercanos y adecuados para tus necesidades.';
   }
+
+  if (context.includes('general_conversation')) {
+    return 'Entiendo. ¿Hay algún síntoma específico que te preocupe o alguna consulta médica que pueda ayudarte a resolver?';
+  }
   
-  // Respuesta por defecto solo para casos no médicos
-  return 'Entiendo tu consulta. ¿Podrías proporcionar más detalles sobre tus síntomas para poder ayudarte mejor?';
+  // Solo para casos muy específicos donde no hay contexto médico
+  return 'Estoy aquí para ayudarte con consultas médicas. ¿Tienes algún síntoma o pregunta de salud?';
 };
 
 // Función específica para generar recomendaciones médicas inteligentes
