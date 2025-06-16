@@ -21,7 +21,7 @@ function ChatInterface() {
   const [showHospitals, setShowHospitals] = useState(false);
   const [isAITyping, setIsAITyping] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
-  const [selectedEPS, setSelectedEPS] = useState<string | null>(null);
+  const [selectedEPS, setSelectedEPS] = useState<{ id: string; name: string; logo: string } | null>(null);
   const [showEPSSelector, setShowEPSSelector] = useState(false);
   const [showEPSFacilities, setShowEPSFacilities] = useState(false);
   const [userName, setUserName] = useState<string>('');
@@ -202,66 +202,71 @@ function ChatInterface() {
 
   const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
-    
+
     addUserMessage(inputValue);
     const currentInput = inputValue;
-    
-    if (stage === 'initial' && conversationStage === 'waiting_name') {
-      // Usuario está escribiendo su nombre
+
+    if (conversationStage === 'waiting_name') {
+      // Guardar el nombre del usuario
       setUserName(currentInput);
       setConversationStage('active_conversation');
-      
-      const welcomeMessage = `Hola ${currentInput}, estoy aquí para ayudarte con orientación médica general. ¿En qué puedo asistirte hoy?`;
-      await addAIResponse(welcomeMessage, 1000, false, `greeting_with_name, user_name: ${currentInput}`);
+
+      // Preguntar por los síntomas
+      const welcomeMessage = `Hola ${currentInput}, ¿qué síntoma tienes o cómo te sientes hoy?`;
+      await addAIResponse(welcomeMessage, 1000, false, 'ask_symptoms');
     } else if (conversationStage === 'active_conversation') {
-      // Usuario está en conversación activa - detectar síntomas médicos
+      // Detectar síntomas médicos
       const detectedSymptoms = detectMedicalSymptoms(currentInput);
-      
+      console.log('Síntomas detectados:', detectedSymptoms);
+
       if (detectedSymptoms.length > 0) {
-        // Se detectaron síntomas médicos - generar recomendación con IA
+        // Eliminar mensaje predeterminado
+        setMessages((prev) => prev.filter(msg => msg.content !== `${userName}, estoy aquí para ayudarte con consultas médicas. ¿Tienes algún síntoma específico que te preocupe o alguna pregunta sobre salud?`));
+
+        // Generar recomendación médica personalizada
         const detectedSeverity = analyzeSeverity(detectedSymptoms, currentInput);
+        console.log('Gravedad detectada:', detectedSeverity);
         setSeverity(detectedSeverity);
-        
+
         setIsAITyping(true);
-        
+
         try {
-          // Generar recomendación médica inteligente usando IA
           const aiRecommendation = await generateMedicalRecommendation(
-            detectedSymptoms, 
-            detectedSeverity, 
+            detectedSymptoms,
+            detectedSeverity,
             userName
           );
-          
+          console.log('Recomendación generada por IA:', aiRecommendation);
+
           setTimeout(() => {
             setIsAITyping(false);
-            // Mostrar la recomendación de la IA
             setMessages((prev) => [...prev, { sender: 'ai', content: aiRecommendation }]);
-            
-            // Después de la recomendación, preguntar si quiere ver centros médicos
+
+            // Preguntar si quiere ver centros médicos
             setTimeout(() => {
-              setMessages((prev) => [...prev, { 
-                sender: 'ai', 
-                content: '¿Te gustaría que te muestre centros médicos cercanos donde puedas recibir atención?' 
+              setMessages((prev) => [...prev, {
+                sender: 'ai',
+                content: '¿Te gustaría que te muestre centros médicos cercanos donde puedas recibir atención?'
               }]);
               setQuickReplies(['Sí, mostrar centros médicos', 'No, gracias']);
               setShowQuickReplies(true);
               setStage('recommendation');
             }, 1500);
           }, 2000);
-          
         } catch (error) {
           console.error('Error generating medical recommendation:', error);
           // Fallback a recomendación básica
           setTimeout(() => {
             setIsAITyping(false);
             const fallbackMessage = `${userName}, basándome en los síntomas que mencionas (${detectedSymptoms.join(', ')}), te recomiendo descansar, mantenerte hidratado y monitorear tus síntomas. Si empeoran o persisten, consulta con un profesional médico.`;
+            console.log('Recomendación fallback:', fallbackMessage);
             setMessages((prev) => [...prev, { sender: 'ai', content: fallbackMessage }]);
-            
-            // Después del fallback, también preguntar por centros médicos
+
+            // Preguntar si quiere ver centros médicos
             setTimeout(() => {
-              setMessages((prev) => [...prev, { 
-                sender: 'ai', 
-                content: '¿Te gustaría que te muestre centros médicos cercanos donde puedas recibir atención?' 
+              setMessages((prev) => [...prev, {
+                sender: 'ai',
+                content: '¿Te gustaría que te muestre centros médicos cercanos donde puedas recibir atención?'
               }]);
               setQuickReplies(['Sí, mostrar centros médicos', 'No, gracias']);
               setShowQuickReplies(true);
@@ -270,8 +275,9 @@ function ChatInterface() {
           }, 2000);
         }
       } else {
-        // No se detectaron síntomas - respuesta conversacional específica
+        // Respuesta conversacional específica
         const contextualResponse = getContextualResponse(currentInput, userName);
+        console.log('Respuesta contextual:', contextualResponse);
         await addAIResponse(contextualResponse, 1000, false, 'general_conversation');
       }
     }
@@ -282,39 +288,45 @@ function ChatInterface() {
   // Función para generar respuestas contextuales sin usar IA
   const getContextualResponse = (message: string, userName: string): string => {
     const lowerMessage = message.toLowerCase();
-    
+
     // Respuestas para saludos
     if (lowerMessage.includes('hola') || lowerMessage.includes('buenos') || lowerMessage.includes('buenas')) {
       return `Hola ${userName}, ¿en qué puedo ayudarte hoy? Puedes contarme sobre cualquier síntoma o consulta médica que tengas.`;
     }
-    
+
     // Respuestas para agradecimientos
     if (lowerMessage.includes('gracias') || lowerMessage.includes('muchas gracias')) {
       return `De nada, ${userName}. Estoy aquí para ayudarte con cualquier consulta médica que tengas.`;
     }
-    
+
     // Respuestas para preguntas generales de salud
     if (lowerMessage.includes('cómo estás') || lowerMessage.includes('como estas')) {
       return `Estoy bien, gracias por preguntar. Lo importante es cómo te sientes tú, ${userName}. ¿Hay algo específico sobre tu salud que te preocupe?`;
     }
-    
+
     // Respuestas para consultas sobre el servicio
     if (lowerMessage.includes('qué puedes hacer') || lowerMessage.includes('que puedes hacer') || lowerMessage.includes('ayuda')) {
       return `Puedo ayudarte con orientación médica general, evaluar síntomas y recomendarte centros médicos cercanos. ¿Tienes algún síntoma o consulta específica?`;
     }
-    
+
+    // Si se detectan síntomas, no devolver el mensaje predeterminado
+    const detectedSymptoms = detectMedicalSymptoms(message);
+    if (detectedSymptoms.length > 0) {
+      return '';
+    }
+
     // Respuesta por defecto para conversación general
     return `${userName}, estoy aquí para ayudarte con consultas médicas. ¿Tienes algún síntoma específico que te preocupe o alguna pregunta sobre salud?`;
   };
 
-  const handleEPSSelect = async (selectedEPSName: string) => {
-    setSelectedEPS(selectedEPSName);
+  const handleEPSSelect = async (eps: { id: string; name: string; logo: string }) => {
+    setSelectedEPS(eps);
     setShowEPSSelector(false);
     setShowEPSFacilities(true);
-    const personalizedMessage = userName 
-      ? `Perfecto, ${userName}. Mostrando centros médicos afiliados a ${selectedEPSName} cerca de tu ubicación.`
-      : `Perfecto. Mostrando centros médicos afiliados a ${selectedEPSName} cerca de tu ubicación.`;
-    await addAIResponse(personalizedMessage, 1000, true, `eps_selected: ${selectedEPSName}, user_name: ${userName}`);
+    const personalizedMessage = userName
+      ? `Perfecto, ${userName}. Mostrando centros médicos afiliados a ${eps.name} cerca de tu ubicación.`
+      : `Perfecto. Mostrando centros médicos afiliados a ${eps.name} cerca de tu ubicación.`;
+    await addAIResponse(personalizedMessage, 1000, true, `eps_selected: ${eps.name}, user_name: ${userName}`);
   };
 
   return (

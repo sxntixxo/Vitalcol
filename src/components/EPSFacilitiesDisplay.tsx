@@ -17,7 +17,7 @@ interface EPSFacility {
 }
 
 interface EPSFacilitiesDisplayProps {
-  selectedEPS: string;
+  selectedEPS: { id: string; name: string; logo: string };
   userLocation: UserLocation | null;
 }
 
@@ -53,7 +53,7 @@ const EPSFacilitiesDisplay: React.FC<EPSFacilitiesDisplayProps> = ({
 
       // Build query parameters
       const params = new URLSearchParams({
-        eps_name: selectedEPS,
+        eps_name: selectedEPS.name,
       });
 
       if (userLocation) {
@@ -159,7 +159,7 @@ const EPSFacilitiesDisplay: React.FC<EPSFacilitiesDisplayProps> = ({
     <div className="space-y-4 mt-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-800">
-          Centros médicos afiliados a {selectedEPS}
+          Centros médicos afiliados a {selectedEPS.name}
         </h3>
         <span className="text-sm text-gray-500">
           {facilities.length} centros encontrados
@@ -173,7 +173,7 @@ const EPSFacilitiesDisplay: React.FC<EPSFacilitiesDisplayProps> = ({
             No se encontraron centros médicos
           </h3>
           <p className="text-gray-600">
-            No hay centros médicos afiliados a {selectedEPS} en tu área.
+            No hay centros médicos afiliados a {selectedEPS.name} en tu área.
           </p>
         </div>
       ) : (
