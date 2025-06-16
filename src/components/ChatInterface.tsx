@@ -17,7 +17,6 @@ function ChatInterface() {
   const [stage, setStage] = useState<TriageStage>('location_permission');
   const [severity, setSeverity] = useState<SeverityLevel>('mild');
   const [showQuickReplies, setShowQuickReplies] = useState(true);
-  const [quickReplies, setQuickReplies] = useState<string[]>(['Sí, permitir acceso', 'No, gracias']);
   const [showHospitals, setShowHospitals] = useState(false);
   const [isAITyping, setIsAITyping] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -221,7 +220,7 @@ function ChatInterface() {
 
       if (detectedSymptoms.length > 0) {
         // Eliminar mensaje predeterminado
-        setMessages((prev) => prev.filter(msg => msg.content !== `${userName}, estoy aquí para ayudarte con consultas médicas. ¿Tienes algún síntoma específico que te preocupe o alguna pregunta sobre salud?`));
+        setMessages((prev) => prev.filter(msg => !msg.content.includes('estoy aquí para ayudarte con consultas médicas')));
 
         // Generar recomendación médica personalizada
         const detectedSeverity = analyzeSeverity(detectedSymptoms, currentInput);
@@ -241,44 +240,16 @@ function ChatInterface() {
           setTimeout(() => {
             setIsAITyping(false);
             setMessages((prev) => [...prev, { sender: 'ai', content: aiRecommendation }]);
-
-            // Preguntar si quiere ver centros médicos
-            setTimeout(() => {
-              setMessages((prev) => [...prev, {
-                sender: 'ai',
-                content: '¿Te gustaría que te muestre centros médicos cercanos donde puedas recibir atención?'
-              }]);
-              setQuickReplies(['Sí, mostrar centros médicos', 'No, gracias']);
-              setShowQuickReplies(true);
-              setStage('recommendation');
-            }, 1500);
-          }, 2000);
+          }, 1000);
         } catch (error) {
           console.error('Error generating medical recommendation:', error);
-          // Fallback a recomendación básica
-          setTimeout(() => {
-            setIsAITyping(false);
-            const fallbackMessage = `${userName}, basándome en los síntomas que mencionas (${detectedSymptoms.join(', ')}), te recomiendo descansar, mantenerte hidratado y monitorear tus síntomas. Si empeoran o persisten, consulta con un profesional médico.`;
-            console.log('Recomendación fallback:', fallbackMessage);
-            setMessages((prev) => [...prev, { sender: 'ai', content: fallbackMessage }]);
-
-            // Preguntar si quiere ver centros médicos
-            setTimeout(() => {
-              setMessages((prev) => [...prev, {
-                sender: 'ai',
-                content: '¿Te gustaría que te muestre centros médicos cercanos donde puedas recibir atención?'
-              }]);
-              setQuickReplies(['Sí, mostrar centros médicos', 'No, gracias']);
-              setShowQuickReplies(true);
-              setStage('recommendation');
-            }, 1500);
-          }, 2000);
+          setMessages((prev) => [...prev, { sender: 'ai', content: 'Lo siento, no pude generar una recomendación en este momento. Por favor, intenta nuevamente más tarde.' }]);
         }
+
+        return;
       } else {
-        // Respuesta conversacional específica
-        const contextualResponse = getContextualResponse(currentInput, userName);
-        console.log('Respuesta contextual:', contextualResponse);
-        await addAIResponse(contextualResponse, 1000, false, 'general_conversation');
+        // Si no se detectan síntomas, mostrar mensaje predeterminado
+        setMessages((prev) => [...prev, { sender: 'ai', content: `${userName}, estoy aquí para ayudarte con consultas médicas. ¿Tienes algún síntoma específico que te preocupe o alguna pregunta sobre salud?` }]);
       }
     }
     
@@ -340,7 +311,7 @@ function ChatInterface() {
             {isAITyping && <AITypingIndicator />}
             {showQuickReplies && (
               <QuickReplyButtons
-                replies={quickReplies}
+                replies={['Sí, permitir acceso', 'No, gracias']}
                 onReplyClick={handleQuickReply}
               />
             )}
