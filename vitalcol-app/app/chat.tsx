@@ -7,7 +7,7 @@ const MEDICAL_KEYWORDS = [
   'dolor', 'síntoma', 'enfermedad', 'medicina', 'tratamiento', 'doctor', 'salud', 'fiebre', 'tos', 'cabeza', 'estómago', 'presión', 'corazón', 'diabetes', 'infección', 'fractura', 'sangre', 'alergia', 'vacuna', 'virus', 'bacteria', 'hospital', 'consulta', 'receta', 'medicamento', 'cirugía', 'herida', 'malestar', 'mareo', 'vómito', 'gripa', 'gripe', 'asma', 'pulmón', 'riñón', 'hígado', 'piel', 'ojo', 'oído', 'nariz', 'boca', 'diente', 'muela', 'garganta', 'hueso', 'musculo', 'articulación', 'embarazo', 'menstruación', 'parto', 'pediatra', 'adulto', 'anciano', 'niño', 'bebé', 'urgencia', 'primeros auxilios'
 ];
 
-const API_KEY = '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';
+const API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export default function Chat() {

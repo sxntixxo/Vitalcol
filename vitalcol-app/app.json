@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.sxntx.vitalcolapp"
     },
     "web": {
       "bundler": "metro",
@@ -41,9 +42,8 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "a9a86636-8cdb-4bb9-be0b-6932b143dfd2"
+        "projectId": "b83f9105-1b52-47f3-be09-db7edbcc859c"
       }
-    },
-    "owner": "sxntx"
+    }
   }
 }

@@ -27,11 +27,7 @@ export default function Index() {
       { iterations: 2 }
     ).start();
 
-    // Navegar después de 2 segundos
-    const timeout = setTimeout(() => {
-      router.replace('/dashboard');
-    }, 2000);
-    return () => clearTimeout(timeout);
+    return () => {};
   }, []);
 
   return (
