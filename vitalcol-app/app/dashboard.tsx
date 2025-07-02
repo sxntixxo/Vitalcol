@@ -1,6 +1,10 @@
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, Dimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+
+// Obtener el ancho de la pantalla para hacer las tarjetas responsivas
+const { width: screenWidth } = Dimensions.get('window');
+const cardWidth = screenWidth * 0.85; // 85% del ancho de pantalla
 
 export default function Dashboard() {
   console.log('Dashboard: Component loaded');
@@ -70,8 +74,9 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: 'white',
     borderRadius: 16,
-    width: '85%',
-    height: 170,
+    // Usando ancho fijo calculado en lugar de porcentaje
+    width: cardWidth,
+    height: 170, // Altura fija
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'column',
@@ -80,6 +85,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    // Asegurar que el contenido no se salga
+    overflow: 'hidden',
   },
   cardText: {
     marginTop: 10,
@@ -88,5 +95,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     alignSelf: 'center',
+    // Asegurar que el texto no cambie el tamaño de la tarjeta
+    maxWidth: cardWidth - 40, // Dejar margen interno
+    flexWrap: 'wrap',
   },
-}); 
+});
