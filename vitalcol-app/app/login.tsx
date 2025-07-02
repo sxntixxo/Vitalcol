@@ -42,14 +42,20 @@ export default function Login() {
       Alert.alert('Error', error.message);
     } else {
       const res = await WebBrowser.openAuthSessionAsync(data.url);
-      if (res.type === 'success') {
-        const url = res.url;
-        const params = AuthSession.getQueryParams(url);
-        if (params.access_token && params.refresh_token) {
-          await supabase.auth.setSession({
-            access_token: params.access_token,
-            refresh_token: params.refresh_token,
-          });
+      if (res.type === 'success' && res.url) {
+        // Parse the URL to extract tokens
+        const hash = res.url.split('#')[1];
+        if (hash) {
+          const params = new URLSearchParams(hash);
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+          }
         }
       }
     }

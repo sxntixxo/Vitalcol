@@ -1,8 +1,12 @@
-
 import React, { useState } from 'react';
 import { Alert, StyleSheet, View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -22,6 +26,41 @@ export default function Register() {
     } else {
       Alert.alert('Registro exitoso', 'Por favor, revisa tu correo para verificar tu cuenta.');
       router.replace('/login');
+    }
+    setLoading(false);
+  }
+
+  async function signInWithGoogle() {
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: AuthSession.makeRedirectUri({
+          preferLocalhost: true,
+          native: 'vitalcolapp:///',
+        }),
+      },
+    });
+
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else {
+      const res = await WebBrowser.openAuthSessionAsync(data.url);
+      if (res.type === 'success' && res.url) {
+        const hash = res.url.split('#')[1];
+        if (hash) {
+          const params = new URLSearchParams(hash);
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+          }
+        }
+      }
     }
     setLoading(false);
   }
@@ -56,6 +95,17 @@ export default function Register() {
         ) : (
           <Text style={styles.buttonText}>Registrarse</Text>
         )}
+      </TouchableOpacity>
+
+      <View style={styles.dividerContainer}>
+        <View style={styles.divider} />
+        <Text style={styles.dividerText}>O</Text>
+        <View style={styles.divider} />
+      </View>
+
+      <TouchableOpacity style={[styles.button, styles.googleButton]} onPress={signInWithGoogle} disabled={loading}>
+        <MaterialCommunityIcons name="google" size={24} color="#4285F4" />
+        <Text style={[styles.buttonText, styles.googleButtonText]}>Registrarse con Google</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.push('/login')} disabled={loading}>
@@ -112,5 +162,27 @@ const styles = StyleSheet.create({
     marginTop: 24,
     fontSize: 16,
     textDecorationLine: 'underline',
+  },
+  googleButton: {
+    backgroundColor: 'white',
+  },
+  googleButtonText: {
+    color: '#4285F4',
+    marginLeft: 12,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 20,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'white',
+  },
+  dividerText: {
+    color: 'white',
+    marginHorizontal: 10,
   },
 });

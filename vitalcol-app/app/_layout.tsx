@@ -22,17 +22,17 @@ const useProtectedRoute = (session: Session | null, initialized: boolean) => {
       return;
     }
 
-    const inAuthPages = segments.includes('login') || segments.includes('register');
+    const inAuthPages = segments[0] === 'login' || segments[0] === 'register';
 
     // If the user is signed in and the initial segment is not a protected route.
     if (session && inAuthPages) {
       // Redirect away from the sign-in page.
       router.replace('/dashboard');
     } else if (!session && !inAuthPages) {
-      // Redirect to the sign-in page.
-      router.replace('/login');
+      // Redirigir primero a la pantalla de registro en vez de login
+      router.replace('/register');
     }
-  }, [session, initialized, segments]);
+  }, [session, initialized, segments, router]);
 };
 
 
@@ -41,25 +41,42 @@ export default function RootLayout() {
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    // Obtenemos la sesión inicial
+    console.log('_layout: Initial session check');
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setInitialized(true);
+      console.log('_layout: Session initialized:', session ? 'active' : 'null');
     });
 
-    // Escuchamos cambios en la autenticación
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      console.log('_layout: Auth state changed:', session ? 'active' : 'null');
     });
 
     return () => {
       data.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (session) {
+      console.log('_layout: Verifying session validity');
+      supabase.auth.getUser().then(({ data, error }) => {
+        if (error || !data?.user) {
+          console.log('_layout: Session invalid, signing out');
+          supabase.auth.signOut();
+          setSession(null);
+        } else {
+          console.log('_layout: Session valid');
+        }
+      });
+    }
+  }, [session]);
   
   useProtectedRoute(session, initialized);
 
   if (!initialized) {
+    console.log('_layout: Not initialized, showing activity indicator');
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#4285F4' }}>
         <ActivityIndicator size="large" color="white" />
@@ -71,12 +88,10 @@ export default function RootLayout() {
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="dashboard" options={{ headerShown: false }} />
-      <Stack.Screen name="chat" options={{ headerShown: false }} />
+      <Stack.Screen name="vozasistent" options={{ headerShown: false }} />
       <Stack.Screen name="camara" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="register" options={{ headerShown: false }} />
-      <Stack.Screen name="profile" options={{ headerShown: false }} />
-      <Stack.Screen name="history" options={{ headerShown: false }} />
     </Stack>
   );
 }

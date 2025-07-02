@@ -27,8 +27,15 @@ export default function Index() {
       { iterations: 2 }
     ).start();
 
-    return () => {};
-  }, []);
+    // Redirigir después de 2 segundos
+    console.log('Index: useEffect started');
+    const timeout = setTimeout(() => {
+      console.log('Index: Timeout triggered, attempting to redirect to /dashboard');
+      router.replace('/dashboard');
+    }, 2000);
+
+    return () => clearTimeout(timeout);
+  }, [scaleAnim, router]);
 
   return (
     <View style={styles.container}>
