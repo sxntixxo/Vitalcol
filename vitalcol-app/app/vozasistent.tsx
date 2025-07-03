@@ -28,6 +28,7 @@ export default function VozAsistente() {
     <html>
     <head>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta charset="utf-8">
       <style>
         body { 
           margin: 0; 
@@ -46,6 +47,8 @@ export default function VozAsistente() {
           flex-direction: column;
           justify-content: center;
           align-items: center;
+          padding: 20px;
+          box-sizing: border-box;
         }
         .title {
           color: white;
@@ -54,20 +57,35 @@ export default function VozAsistente() {
           margin-bottom: 20px;
           text-align: center;
         }
+        .loading {
+          color: white;
+          font-size: 16px;
+          margin-top: 20px;
+        }
         elevenlabs-convai {
-          width: 90%;
-          max-width: 400px;
-          height: 60%;
+          width: 95%;
+          max-width: 450px;
+          height: 70%;
+          min-height: 400px;
           border-radius: 15px;
           box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+          background: white;
         }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="title">Conversa con tu Asistente IA</div>
-        <elevenlabs-convai agent-id="agent_01jz2951exfm69wzewj6kqs90x"></elevenlabs-convai>
-        <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+        <div class="loading" id="loading">Cargando widget...</div>
+        <elevenlabs-convai 
+          agent-id="agent_01jz2951exfm69wzewj6kqs90x"
+          style="display: none;"
+        ></elevenlabs-convai>
+        <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" 
+                onload="document.getElementById('loading').style.display='none'; document.querySelector('elevenlabs-convai').style.display='block';"
+                onerror="document.getElementById('loading').innerHTML='Error al cargar el widget. Verifica tu conexión.';"
+                async type="text/javascript">
+        </script>
       </div>
     </body>
     </html>
@@ -167,6 +185,15 @@ export default function VozAsistente() {
           mediaPlaybackRequiresUserAction={false}
           mixedContentMode={'compatibility'}
           originWhitelist={['*']}
+          onError={(error) => {
+            console.error('WebView Error:', error);
+            Alert.alert('Error', 'No se pudo cargar el widget. Verifica tu conexión a internet.');
+          }}
+          onHttpError={(error) => {
+            console.error('HTTP Error:', error);
+          }}
+          onLoadStart={() => console.log('WebView loading started')}
+          onLoadEnd={() => console.log('WebView loading finished')}
         />
       </View>
     );
