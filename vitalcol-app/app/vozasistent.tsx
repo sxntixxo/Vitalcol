@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Dimensions } from 'react-native';
 import { Audio } from 'expo-av';
 import axios from 'axios';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
 
 const ELEVENLABS_API_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY;
 const ELEVENLABS_STT_URL = 'https://api.elevenlabs.io/v1/speech-to-text';
@@ -12,6 +13,7 @@ export default function VozAsistente() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showConvai, setShowConvai] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -20,6 +22,56 @@ export default function VozAsistente() {
       }
     };
   }, [recording]);
+
+  const convaiHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { 
+          margin: 0; 
+          padding: 0; 
+          background: linear-gradient(135deg, #4285F4 0%, #1565c0 100%);
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .container {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+        }
+        .title {
+          color: white;
+          font-size: 24px;
+          font-weight: bold;
+          margin-bottom: 20px;
+          text-align: center;
+        }
+        elevenlabs-convai {
+          width: 90%;
+          max-width: 400px;
+          height: 60%;
+          border-radius: 15px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="title">Conversa con tu Asistente IA</div>
+        <elevenlabs-convai agent-id="agent_01jz2951exfm69wzewj6kqs90x"></elevenlabs-convai>
+        <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+      </div>
+    </body>
+    </html>
+  `;
 
   async function startRecording() {
     try {
@@ -73,10 +125,10 @@ export default function VozAsistente() {
     // @ts-ignore
     formData.append('audio', {
       uri: audioUri,
-      name: 'audio.m4a', // Eleven Labs supports m4a
+      name: 'audio.m4a',
       type: 'audio/m4a',
     });
-    formData.append('model_id', 'eleven_multilingual_v2'); // Or another suitable model
+    formData.append('model_id', 'eleven_multilingual_v2');
 
     try {
       const response = await axios.post(ELEVENLABS_STT_URL, formData, {
@@ -93,9 +145,47 @@ export default function VozAsistente() {
     }
   }
 
+  const handleConvaiToggle = () => {
+    setShowConvai(!showConvai);
+  };
+
+  if (showConvai) {
+    return (
+      <View style={styles.container}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={handleConvaiToggle}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
+          <Text style={styles.backText}>Volver</Text>
+        </TouchableOpacity>
+        <WebView 
+          source={{ html: convaiHtml }}
+          style={styles.webview}
+          javaScriptEnabled={true}
+          allowsInlineMediaPlayback={true}
+          mediaPlaybackRequiresUserAction={false}
+          mixedContentMode={'compatibility'}
+          originWhitelist={['*']}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Asistente de Voz</Text>
+      
+      {/* Botón para abrir Convai */}
+      <TouchableOpacity
+        style={styles.convaiButton}
+        onPress={handleConvaiToggle}
+      >
+        <MaterialCommunityIcons name="robot" size={30} color="white" />
+        <Text style={styles.convaiButtonText}>Conversar con IA</Text>
+      </TouchableOpacity>
+
+      {/* Botón de grabación original */}
       <TouchableOpacity
         style={styles.recordButton}
         onPress={isRecording ? stopRecording : startRecording}
@@ -111,9 +201,11 @@ export default function VozAsistente() {
           />
         )}
       </TouchableOpacity>
+      
       <Text style={styles.recordStatus}>
         {isRecording ? 'Grabando...' : 'Toca para grabar'}
       </Text>
+      
       {transcribedText ? (
         <View style={styles.transcriptionContainer}>
           <Text style={styles.transcriptionLabel}>Texto Transcrito:</Text>
@@ -123,6 +215,8 @@ export default function VozAsistente() {
     </View>
   );
 }
+
+const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
@@ -137,6 +231,26 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 40,
+  },
+  convaiButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#34A853',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderRadius: 30,
+    marginBottom: 30,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  convaiButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 10,
   },
   recordButton: {
     width: 120,
@@ -179,5 +293,27 @@ const styles = StyleSheet.create({
   transcribedText: {
     fontSize: 16,
     color: '#555',
+  },
+  webview: {
+    flex: 1,
+    width: width,
+    height: height,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 1000,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  backText: {
+    color: 'white',
+    fontSize: 16,
+    marginLeft: 5,
   },
 });

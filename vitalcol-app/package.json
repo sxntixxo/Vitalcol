@@ -20,6 +20,7 @@
     "axios": "^1.10.0",
     "expo": "53.0.17",
     "expo-auth-session": "~6.2.1",
+    "expo-av": "~15.1.7",
     "expo-blur": "~14.1.5",
     "expo-constants": "~17.1.6",
     "expo-crypto": "~14.1.5",
@@ -33,6 +34,7 @@
     "expo-symbols": "~0.4.5",
     "expo-system-ui": "~5.0.10",
     "expo-web-browser": "~14.2.0",
+    "lottie-react-native": "7.2.2",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.5",
@@ -43,9 +45,7 @@
     "react-native-svg": "15.11.2",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-web": "~0.20.0",
-    "react-native-webview": "13.13.5",
-    "lottie-react-native": "7.2.2",
-    "expo-av": "~15.1.7"
+    "react-native-webview": "13.13.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
