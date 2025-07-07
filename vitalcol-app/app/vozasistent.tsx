@@ -93,7 +93,13 @@ export default function VozAsistente() {
 
   async function startRecording() {
     try {
-      await Audio.requestPermissionsAsync();
+      const permission = await Audio.requestPermissionsAsync();
+
+      if (permission.status !== 'granted') {
+        Alert.alert('Permiso denegado', 'No se puede grabar audio sin el permiso del micrófono.');
+        return;
+      }
+
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
